@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+	<head>
+		<title>tss document</title>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<link rel="icon" type="image/png" href="https://c.cksource.com/a/1/logos/ckeditor5.png">
+		<link rel="stylesheet" type="text/css" href="styles.css">
+		<style type="text/css">
+			#theForm button {
+				border: inherit;
+				font-size:inherit;
+				font-weight: bold;
+
+			}
+			#theForm button:hover {
+				cursor: pointer;
+			}
+			#theForm button:active {
+				border: solid;
+			}
+			#theForm output {
+				font-style: oblique;
+				font-weight: bold;
+			}
+			#theForm select {
+				 font-size:inherit;
+				 border: inherit;
+				 outline: inherit;
+			}
+		</style>
+	</head>
+	<body style="margin:0;padding:0% 5%;" data-editor="ClassicEditor" data-collaboration="false" data-revision-history="false">
+		<div id="myContainer" class="editor" style="max-width:100%;"></div><!-- CKEditor5 writes into this div -->
+		<div style="border-color: #ccced1; border-radius: 2px; border-width: 1px; border-style: solid;">
+			<!--Below is the original CKSource Copyright notice, followed by their original footer
+
+				Copyright (c) 2014-2023, CKSource Holding sp. z o.o. All rights reserved.
+				This file is licensed under the terms of the MIT License (see LICENSE.md).
+			-->
+			<footer style="margin: 0;">
+				<p><a href="https://ckeditor.com/ckeditor-5/" target="_blank" rel="noopener">CKEditor 5</a>
+					– Rich text editor of tomorrow, available today
+				</p>
+				<p>Copyright © 2003-2023,
+					<a href="https://cksource.com/" target="_blank" rel="noopener">CKSource</a>
+					Holding sp. z o.o. All rights reserved.
+				</p>
+				<p>
+					For questions about this document or <b>tss</b> contact <a href="mailto:brian@motia.com">Brian Ebert</a>
+				</p>
+			</footer>
+			<!-- CKSource's copyright notice ends the document under edit -->
+		</div>
+		<!--
+			Below controls navigation between pages of a document being read or edited.
+			Pages are stored on IPFS, linked and encrypted with tss
+		-->
+		<div style="font-size: 0.75em; background-color: #f2f2f3; padding: 0 2em;
+								border-color: #ccced1; border-radius: 2px; border-width: 1px; border-style: solid;
+								position: sticky; z-index: 100; bottom: 0;left: 5%;right: 5%;">
+			<div id="theForm">
+				<div style="padding: 0.5em 0 0.25em">
+					<span>
+						<button id="saveButton" type="button" style="background: #ccffcc;" disabled>Save Document</button>
+					</span>
+					<span>
+						<label for="editingPage">Page Address </label>
+						<output id="editingPage">bafkreifviadbyrbrihsngygpf6autduxa5sc76ptcqkag5hpsoxjactnya</output>
+					</span>
+					<span style="float: right;">
+						<label for="editingRoot">Document Address </label>
+						<output id="editingRoot"/></output>
+					</span>
+				</div>
+				<div style="padding: 0.25em 0 0.5em">
+					<span>
+						<label id="pageSelectLabel" for="pageSelect">Reading Page:</label>
+						<select id="pageSelect" style="font-weight: bold;" disabled></select>
+						<button id="homeButton" type="button" disabled>Home</button>
+						<button id="upButton" type="button" disabled>Up</button>
+						<span id="subpagesLabel">Subpages:</span>
+						<span id="subPages"/>
+					</span>
+					<span style="float: right;">
+						<span>
+							<button id="editButton" type="button">Edit Document</button>
+						</span>
+						<span class="pageControls" hidden>
+							<label>Add Subpage:</label>
+							<input id="pageName" type="text" placeholder="NAME" size="5" pattern="^((?!up|UP|Up|home|Home|HOME).)*$"
+										 style="font-size:inherit; border: inherit; outline: inherit;"/>
+						</span>
+						<span style="border: none;outline: none;" class="pageControls" hidden>
+							<label for="rmSelect">Delete Subpage:</label>
+							<select id="rmSelect"></select>
+						</span>
+					</span>
+				</div>
+			</div>
+		</div>
+		<script src="./ckeditor.js"></script>
+		<script src="./client.js"></script>
+	</body>
+</html>

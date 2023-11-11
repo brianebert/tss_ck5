@@ -1,0 +1,15 @@
+{
+  "name": "ck5_tss",
+  "version": "1.0.0",
+  "description": "Ckeditor5 running on top of @brianebert/tss",
+  "browser": "client.js",
+  "author": "Brian Ebert",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "@brianebert/tss": "1.0.1"
+  },
+  "devDependencies": {
+    "webpack-cli": "5.1.4"
+  }
+}
