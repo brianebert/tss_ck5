@@ -37,6 +37,7 @@ class CKE5_Page extends Encrypted_Node {
   }
 
   static async init(keys){
+console.log(`entered init() with keys: `, keys);
     const homeButton = document.getElementById('homeButton');
     homeButton.value = window.collab.cid.toString();
     homeButton.addEventListener('click', e => CKE5_Page.enterPage(e, window.collab.signingAccount));
@@ -175,11 +176,6 @@ class CKE5_Page extends Encrypted_Node {
     window.scroll(0,0);
   }
 
-  static updateEditingAddresses(page, root){
-    document.getElementById('editingPage').value = page;
-    document.getElementById('editingRoot').value = root;
-  }
-
   addSubpage(evt){
     const name = evt.target.value;
     evt.target.value = ''; // ¡¡¡ must go before setting evt.target.size !!!
@@ -190,7 +186,8 @@ class CKE5_Page extends Encrypted_Node {
     const keys = ec25519 ? {writer: ec25519.sk, reader: ec25519.pk} : null;
     return this.insert(subpage, name, keys)
       .then(root => {
-        CKE5_Page.updateEditingAddresses(this.cid.toString(), root.cid.toString());
+        document.getElementById('editingPage').value = this.cid.toString();
+        document.getElementById('editingRoot').value = root.cid.toString();
         const [button, option] = CKE5_Page.pageLinkingElements(subpage.name, subpage.cid.toString());
         button.addEventListener('click', e => CKE5_Page.enterPage(e, this.signingAccount))
         document.getElementById('subPages').appendChild(button);
@@ -236,7 +233,7 @@ class CKE5_Page extends Encrypted_Node {
 /* Now start the program running
  */
 
-// First parse the url for Stellar account number and data entry name
+// Parse the url for Stellar account number and data entry name where document's ipfs address is saved
 const segments = window.location.href.split('?');
 const qP = Object.fromEntries(segments.pop().split('&').map(pair => pair.split('=')));
 // did we get the right parameters in the query string?
