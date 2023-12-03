@@ -61,6 +61,8 @@ console.log(`entered init() with keys: `, keys);
   // populates page selector with options indented to create a site map.
   // calling .traverse() adds backlinks to parent COL_Nodes.
   static async populatePageSelect(root, keys, selectValue){
+    const subPageLinks = Array.from(document.getElementById('subPages').children);
+    subPageLinks.forEach(link => link.disabled = true);
     const el = document.getElementById('pageSelect');
     el.disabled = true;
     el.innerHTML = '';
@@ -80,6 +82,7 @@ console.log(`entered init() with keys: `, keys);
     for(const option of opts)
       el.append(option);
     el.disabled = false;
+    subPageLinks.forEach(link => link.disabled = false);
   }
 
   static readOnlyMode(lockId, bool){
@@ -106,9 +109,9 @@ console.log(`entered init() with keys: `, keys);
     }
 
     // populate editor contents and "Page Address" of UI
-    if(Object.hasOwn(node.data, 'editorContents')){
+    if(Object.hasOwn(node.value, 'editorContents')){
       node.elements.editingPage.value = node.cid.toString();
-      node.editorEl.innerHTML = node.data.editorContents;
+      node.editorEl.innerHTML = node.value.editorContents;
     } else {
       node.elements.editingPage.value = '';
       node.editorEl.innerHTML = '';
@@ -220,11 +223,12 @@ console.log(`entered init() with keys: `, keys);
       if(this.parents.length)
         document.getElementById('upButton').value = this.parents[0].cid.toString();
       const ec25519 = root.signingAccount.ec25519;
-      const keys = ec25519 ? {writer: ec25519.pk, reader: ec25519.sk} : null;
+      let keys = ec25519 ? {writer: ec25519.sk, reader: ec25519.pk} : null;
       if(root.signingAccount.ed25519) 
-        Encrypted_Node.persist(root.signingAccount,root.name, root.cid.toString());
+        Encrypted_Node.persist(root.signingAccount,root.name, root.cid, keys);
       document.getElementById('editingRoot').value = root.cid.toString();
       document.getElementById('editingPage').value = this.cid.toString();
+      keys = ec25519 ? {writer: ec25519.pk, reader: ec25519.sk} : null;
       CKE5_Page.populatePageSelect(root, keys, this.cid.toString());
     })
   }
