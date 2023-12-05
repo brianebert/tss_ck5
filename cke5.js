@@ -225,7 +225,7 @@ console.log(`entered init() with keys: `, keys);
       const ec25519 = root.signingAccount.ec25519;
       let keys = ec25519 ? {writer: ec25519.sk, reader: ec25519.pk} : null;
       if(root.signingAccount.ed25519) 
-        Encrypted_Node.persist(root.signingAccount,root.name, root.cid, keys);
+        Encrypted_Node.persist(root.signingAccount,qP.label, root.cid, keys);
       document.getElementById('editingRoot').value = root.cid.toString();
       document.getElementById('editingPage').value = this.cid.toString();
       keys = ec25519 ? {writer: ec25519.pk, reader: ec25519.sk} : null;
@@ -247,12 +247,11 @@ if(qP === undefined || !Object.hasOwn(qP, 'account') || !Object.hasOwn(qP, 'labe
 // create a SigningAccount, with keys if user agrees to sign
 // a transaction used as a key seed
 let sA = await SigningAccount.fromWallet();
-if(sA && sA.account.id === qP.account)
+if(sA?.account.id === qP.account)
   await sA.deriveKeys(null, {asymetric: 'Asymetric', signing: 'Signing', shareKX: 'ShareKX'})
-            .catch(err => {// found the authoring account but could't derive keys
-                console.error(`Error deriving keys for SigningAccount ${sA.account.id}`, err);
-                sA = new SigningAccount(qP.account);
-            });
+          .catch(err => {// found the authoring account but could't derive keys
+            console.error(`Error deriving keys for SigningAccount ${sA.account.id}`, err);
+          });
 else
   sA = new SigningAccount(qP.account);
 
