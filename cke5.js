@@ -224,7 +224,7 @@ console.log(`entered init() with keys: `, keys);
         document.getElementById('upButton').value = this.parents[0].cid.toString();
       const ec25519 = root.signingAccount.ec25519;
       let keys = ec25519 ? {writer: ec25519.sk, reader: ec25519.pk} : null;
-      if(root.signingAccount.ed25519) 
+      if(SigningAccount.canSign(root.signingAccount))
         Encrypted_Node.persist(root.signingAccount,qP.label, root.cid, keys);
       document.getElementById('editingRoot').value = root.cid.toString();
       document.getElementById('editingPage').value = this.cid.toString();
@@ -241,22 +241,32 @@ console.log(`entered init() with keys: `, keys);
 const segments = window.location.href.split('?');
 const qP = Object.fromEntries(segments.pop().split('&').map(pair => pair.split('=')));
 // did we get the right parameters in the query string?
-if(qP === undefined || !Object.hasOwn(qP, 'account') || !Object.hasOwn(qP, 'label'))
-  throw new Error(`data root account and label must appear in url query string`)
-
+if(qP === undefined || !Object.hasOwn(qP, 'readFrom') || !Object.hasOwn(qP, 'writeTo') || !Object.hasOwn(qP, 'label'))
+  throw new Error(`data root source, sink, and label must appear in url query string`)
+if(qP.writeTo !== 'localStorage')
+  CKE5_Page.sink.url = (cid) => `https://motia.com/api/v1/ipfs/block/put?cid-codec=${CKE5_Page.codecForCID(cid).name}`;
+if(qP.readFrom !== 'localStorage')
+  CKE5_Page.source.url = (cid) => `https://motia.infura-ipfs.io/ipfs/${cid.toString()}`;
 // create a SigningAccount, with keys if user agrees to sign
 // a transaction used as a key seed
-let sA = await SigningAccount.fromWallet();
-if(sA?.account.id === qP.account)
+let sA = await SigningAccount.fromWallet()
+if(!!sA) {
   await sA.deriveKeys(null, {asymetric: 'Asymetric', signing: 'Signing', shareKX: 'ShareKX'})
-          .catch(err => {// found the authoring account but could't derive keys
-            console.error(`Error deriving keys for SigningAccount ${sA.account.id}`, err);
-          });
-else
-  sA = new SigningAccount(qP.account);
+          .catch(err => console.error(`Error deriving keys for SigningAccount ${sA.account.id}`, err));
+  if(sA.id === qP.readFrom || qP.readFrom === 'localStorage')
+    var sourceAccount = sA;
+}
+if(!sourceAccount)
+  try {
+    var sourceAccount = new SigningAccount(qP.readFrom)
+  } catch(err) {
+    console.error(`error creating readFrom account with id: ${qP.readFrom} `, err);
+    throw new Error(`do not know where to readFrom: ${qP.readFrom}`)
+  }
 
 // revisions have been encrypted. You are probably reading plaintext.
-const keys = sA.ec25519 ? {writer: sA.ec25519.pk, reader: sA.ec25519.sk} : null;
-window.collab = await CKE5_Page.fromSigningAccount(sA, qP.label, keys);
+const keys = sourceAccount.ec25519 ? {writer: sA.ec25519.pk, reader: sA.ec25519.sk} : null;
+
+window.collab = await CKE5_Page.fromSigningAccount(sourceAccount, qP.label, keys);
 await CKE5_Page.init(keys);
 //CKE5_Page.publishPlaintext(window.collab, keys, 'tssDoc');
