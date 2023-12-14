@@ -85,11 +85,12 @@ console.log(`entered init() with keys: `, keys);
     subPageLinks.forEach(link => link.disabled = false);
   }
 
-  static readOnlyMode(lockId, bool){
+  static lockId = Symbol();
+  static readOnlyMode(bool){
     console.log(`window.collab is: `, window?.collab);
     const editor = window.watchdog.editor;
     const pageSelectLabel = bool ? 'Reading Page: ' : 'Editing Page: ';
-    bool ? editor.enableReadOnlyMode(lockId) : editor.disableReadOnlyMode(lockId);
+    bool ? editor.enableReadOnlyMode(this.lockId) : editor.disableReadOnlyMode(this.lockId);
     Array.from(document.getElementsByClassName('pageControls')).forEach(el => el.hidden = bool);
     document.getElementById('pageSelectLabel').textContent = pageSelectLabel;
     document.getElementById('editButton').hidden = !bool;
@@ -141,11 +142,10 @@ console.log(`entered init() with keys: `, keys);
           subpagesEl.appendChild(button);
         }
 
-    const lockId = Symbol();
-    document.getElementById('editButton').addEventListener('click', e => CKE5_Page.readOnlyMode(lockId, false));
+    document.getElementById('editButton').addEventListener('click', e => CKE5_Page.readOnlyMode(false));
     document.getElementById('saveButton').addEventListener('click', e => 
       window.watchdog.editor.plugins.get('Autosave').save(window.watchdog.editor).then(() => 
-        this.readOnlyMode(lockId, true)
+        this.readOnlyMode(true)
       )
     );
     document.getElementById('subpagesLabel').hidden = !subpagesEl.children.length;
@@ -173,7 +173,7 @@ console.log(`entered init() with keys: `, keys);
 
     window.watchdog = new CK_Watchdog(
       node.editorEl, 
-      () => CKE5_Page.readOnlyMode(lockId, true), 
+      () => CKE5_Page.readOnlyMode(true), 
       document.getElementById('saveButton')
     );    
     window.scroll(0,0);
@@ -265,8 +265,10 @@ if(!sourceAccount)
   }
 
 // revisions have been encrypted. You are probably reading plaintext.
-const keys = sourceAccount.ec25519 ? {writer: sA.ec25519.pk, reader: sA.ec25519.sk} : null;
-
+//const keys = sourceAccount.ec25519 ? {writer: sA.ec25519.pk, reader: sA.ec25519.sk} : null;
+//console.log(`keys are: `, keys);
+//console.log(`SigningAccount keys are: `, await sourceAccount.keys.readFrom('self'));
+const keys = await sourceAccount.keys.readFrom('self');
 window.collab = await CKE5_Page.fromSigningAccount(sourceAccount, qP.label, keys);
 await CKE5_Page.init(keys);
 //CKE5_Page.publishPlaintext(window.collab, keys, 'tssDoc');
