@@ -61,6 +61,7 @@ console.log(`entered init() with keys: `, keys);
   // populates page selector with options indented to create a site map.
   // calling .traverse() adds backlinks to parent COL_Nodes.
   static async populatePageSelect(root, keys, selectValue){
+console.log(`populating page selector for ${root.name} with ${selectValue} selected.`);
     const subPageLinks = Array.from(document.getElementById('subPages').children);
     subPageLinks.forEach(link => link.disabled = true);
     const el = document.getElementById('pageSelect');
@@ -68,6 +69,7 @@ console.log(`entered init() with keys: `, keys);
     el.innerHTML = '';
     const opts = [];
     function populateSelectOption(page, depth){
+console.log(`creating page select option ${page.name}, value ${page.cid.toString()}`);
       const pageOption = document.createElement('option');
       let indent;
       for(indent=''; depth; depth--)
@@ -195,6 +197,7 @@ console.log(`entered init() with keys: `, keys);
         button.addEventListener('click', e => CKE5_Page.enterPage(e, this.signingAccount))
         document.getElementById('subPages').appendChild(button);
         document.getElementById('rmSelect').appendChild(option);
+        Encrypted_Node.persist(root.signingAccount,qP.label, root.cid, keys);
         return CKE5_Page.populatePageSelect(root, keys, this.cid.toString());
       })
   }
@@ -243,10 +246,24 @@ const qP = Object.fromEntries(segments.pop().split('&').map(pair => pair.split('
 // did we get the right parameters in the query string?
 if(qP === undefined || !Object.hasOwn(qP, 'readFrom') || !Object.hasOwn(qP, 'writeTo') || !Object.hasOwn(qP, 'label'))
   throw new Error(`data root source, sink, and label must appear in url query string`)
-if(qP.writeTo !== 'localStorage')
-  CKE5_Page.sink.url = (cid) => `https://motia.com/api/v1/ipfs/block/put?cid-codec=${CKE5_Page.codecForCID(cid).name}`;
-if(qP.readFrom !== 'localStorage')
-  CKE5_Page.source.url = (cid) => `https://motia.infura-ipfs.io/ipfs/${cid.toString()}`;
+switch(qP.readFrom){
+  case 'localStorage':
+    break;
+  default:
+    CKE5_Page.source.url = (cid) => `https://motia.infura-ipfs.io/ipfs/${cid.toString()}`;
+}
+switch(qP.writeTo){
+case 'localStorage':
+  break;
+default:
+  CKE5_Page.sink.url = (cid) => typeof cid === 'string' ? `https://motia.com/api/v1/ipfs/pin/add?arg=${cid}` :
+                       `https://motia.com/api/v1/ipfs/block/put?cid-codec=${CKE5_Page.codecForCID(cid).name}`;
+}
+//if(qP.writeTo !== 'localStorage')
+  //CKE5_Page.sink.url = (cid) => `https://motia.com/api/v1/ipfs/block/put?cid-codec=${CKE5_Page.codecForCID(cid).name}`;
+//if(qP.readFrom !== 'localStorage')
+  //CKE5_Page.source.url = (cid) => `https://motia.infura-ipfs.io/ipfs/${cid.toString()}`;
+
 // create a SigningAccount, with keys if user agrees to sign
 // a transaction used as a key seed
 let sA = await SigningAccount.fromWallet()
