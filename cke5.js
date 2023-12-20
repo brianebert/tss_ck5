@@ -43,7 +43,7 @@ console.log(`entered init() with keys: `, keys);
     homeButton.addEventListener('click', e => CKE5_Page.enterPage(e, window.collab.signingAccount));
     document.getElementById('editingRoot').value = homeButton.value;
     this.refreshPageview();
-    await this.populatePageSelect(window.collab, keys, window.collab.cid.toString());
+    //await this.populatePageSelect(window.collab, keys, window.collab.cid.toString());
     console.log(`cache state is: `, CKE5_Page.cache);
   }
 
@@ -197,7 +197,7 @@ console.log(`creating page select option ${page.name}, value ${page.cid.toString
         button.addEventListener('click', e => CKE5_Page.enterPage(e, this.signingAccount))
         document.getElementById('subPages').appendChild(button);
         document.getElementById('rmSelect').appendChild(option);
-        Encrypted_Node.persist(root.signingAccount,qP.label, root.cid, keys);
+        //Encrypted_Node.persist(root.signingAccount,qP.label, root.cid, keys);
         return CKE5_Page.populatePageSelect(root, keys, this.cid.toString());
       })
   }
@@ -227,8 +227,8 @@ console.log(`creating page select option ${page.name}, value ${page.cid.toString
         document.getElementById('upButton').value = this.parents[0].cid.toString();
       const ec25519 = root.signingAccount.ec25519;
       let keys = ec25519 ? {writer: ec25519.sk, reader: ec25519.pk} : null;
-      if(SigningAccount.canSign(root.signingAccount))
-        Encrypted_Node.persist(root.signingAccount,qP.label, root.cid, keys);
+      //if(SigningAccount.canSign(root.signingAccount))
+        //Encrypted_Node.persist(root.signingAccount,qP.label, root.cid, keys);
       document.getElementById('editingRoot').value = root.cid.toString();
       document.getElementById('editingPage').value = this.cid.toString();
       keys = ec25519 ? {writer: ec25519.pk, reader: ec25519.sk} : null;
@@ -244,15 +244,15 @@ console.log(`creating page select option ${page.name}, value ${page.cid.toString
 const segments = window.location.href.split('?');
 const qP = Object.fromEntries(segments.pop().split('&').map(pair => pair.split('=')));
 // did we get the right parameters in the query string?
-if(qP === undefined || !Object.hasOwn(qP, 'readFrom') || !Object.hasOwn(qP, 'writeTo') || !Object.hasOwn(qP, 'label'))
-  throw new Error(`data root source, sink, and label must appear in url query string`)
+if(qP === undefined || !Object.hasOwn(qP, 'readFrom')/* || !Object.hasOwn(qP, 'address') || !Object.hasOwn(qP, 'writeTo') || !Object.hasOwn(qP, 'label')*/)
+  throw new Error(`data root source must appear in url query string`)
 switch(qP.readFrom){
   case 'localStorage':
     break;
   default:
     CKE5_Page.source.url = (cid) => `https://motia.infura-ipfs.io/ipfs/${cid.toString()}`;
 }
-switch(qP.writeTo){
+switch(qP?.writeTo){
 case 'localStorage':
   break;
 default:
@@ -266,26 +266,26 @@ default:
 
 // create a SigningAccount, with keys if user agrees to sign
 // a transaction used as a key seed
-let sA = await SigningAccount.fromWallet()
-if(!!sA) {
-  await sA.deriveKeys(null, {asymetric: 'Asymetric', signing: 'Signing', shareKX: 'ShareKX'})
-          .catch(err => console.error(`Error deriving keys for SigningAccount ${sA.account.id}`, err));
-  if(sA.id === qP.readFrom || qP.readFrom === 'localStorage')
-    var sourceAccount = sA;
-}
-if(!sourceAccount)
-  try {
-    var sourceAccount = new SigningAccount(qP.readFrom)
-  } catch(err) {
-    console.error(`error creating readFrom account with id: ${qP.readFrom} `, err);
-    throw new Error(`do not know where to readFrom: ${qP.readFrom}`)
-  }
+const sourceAccount = await SigningAccount.fromWallet();
+await sourceAccount.deriveKeys(null, {asymetric: 'Asymetric', signing: 'Signing', shareKX: 'ShareKX'})
+                   .catch(err => console.error(`Error deriving keys for SigningAccount ${sA.account.id}`, err));
 
 // revisions have been encrypted. You are probably reading plaintext.
 //const keys = sourceAccount.ec25519 ? {writer: sA.ec25519.pk, reader: sA.ec25519.sk} : null;
 //console.log(`keys are: `, keys);
 //console.log(`SigningAccount keys are: `, await sourceAccount.keys.readFrom('self'));
 const keys = await sourceAccount.keys.readFrom('self');
-window.collab = await CKE5_Page.fromSigningAccount(sourceAccount, qP.label, keys);
-await CKE5_Page.init(keys);
+//window.collab = await CKE5_Page.fromSigningAccount(sourceAccount, qP.label, keys);
+document.getElementById('address').addEventListener('change', async function(e){
+  console.log(`detected address input ${e.target.value}`);
+  try {
+    window.collab = await CKE5_Page.fromCID(sourceAccount, e.target.value, keys);
+    await CKE5_Page.init(keys);
+    console.log(`${window.collab.name}'s subpage links are: `, window.collab.links);
+  } catch (err) {
+    console.error(`error opening ${e.target.value}`);
+  }
+})
+//window.collab = await CKE5_Page.fromCID(sourceAccount, qP.address, keys);
+//await CKE5_Page.init(keys);
 //CKE5_Page.publishPlaintext(window.collab, keys, 'tssDoc');
