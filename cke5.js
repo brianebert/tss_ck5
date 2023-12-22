@@ -232,7 +232,7 @@ console.log(`creating page select option ${page.name}, value ${page.cid.toString
       document.getElementById('editingRoot').value = root.cid.toString();
       document.getElementById('editingPage').value = this.cid.toString();
       keys = ec25519 ? {writer: ec25519.pk, reader: ec25519.sk} : null;
-      CKE5_Page.populatePageSelect(root, keys, this.cid.toString());
+      //CKE5_Page.populatePageSelect(root, keys, this.cid.toString());
     })
   }
 }
@@ -246,23 +246,6 @@ const qP = Object.fromEntries(segments.pop().split('&').map(pair => pair.split('
 // did we get the right parameters in the query string?
 if(qP === undefined || !Object.hasOwn(qP, 'readFrom')/* || !Object.hasOwn(qP, 'address') || !Object.hasOwn(qP, 'writeTo') || !Object.hasOwn(qP, 'label')*/)
   throw new Error(`data root source must appear in url query string`)
-switch(qP.readFrom){
-  case 'localStorage':
-    break;
-  default:
-    CKE5_Page.source.url = (cid) => `https://motia.infura-ipfs.io/ipfs/${cid.toString()}`;
-}
-switch(qP?.writeTo){
-case 'localStorage':
-  break;
-default:
-  CKE5_Page.sink.url = (cid) => typeof cid === 'string' ? `https://motia.com/api/v1/ipfs/pin/add?arg=${cid}` :
-                       `https://motia.com/api/v1/ipfs/block/put?cid-codec=${CKE5_Page.codecForCID(cid).name}`;
-}
-//if(qP.writeTo !== 'localStorage')
-  //CKE5_Page.sink.url = (cid) => `https://motia.com/api/v1/ipfs/block/put?cid-codec=${CKE5_Page.codecForCID(cid).name}`;
-//if(qP.readFrom !== 'localStorage')
-  //CKE5_Page.source.url = (cid) => `https://motia.infura-ipfs.io/ipfs/${cid.toString()}`;
 
 // create a SigningAccount, with keys if user agrees to sign
 // a transaction used as a key seed
@@ -274,18 +257,101 @@ await sourceAccount.deriveKeys(null, {asymetric: 'Asymetric', signing: 'Signing'
 //const keys = sourceAccount.ec25519 ? {writer: sA.ec25519.pk, reader: sA.ec25519.sk} : null;
 //console.log(`keys are: `, keys);
 //console.log(`SigningAccount keys are: `, await sourceAccount.keys.readFrom('self'));
-const keys = await sourceAccount.keys.readFrom('self');
-//window.collab = await CKE5_Page.fromSigningAccount(sourceAccount, qP.label, keys);
-document.getElementById('address').addEventListener('change', async function(e){
-  console.log(`detected address input ${e.target.value}`);
+//const keys = await sourceAccount.keys.readFrom('self');
+function makeKeys(keyElId, keyFn){
+  const value = document.getElementById(keyElId).value;
+  switch(value){
+  case 'plaintext':
+    return Promise.resolve(null)
+  case 'self':
+    return keyFn('self')
+  case 'add':
+    const other = document.getElementById('addFrom').value
+    addOption(keyElId, other);
+    return keyFn(other)
+  default:
+    return keyFn(value)
+  }
+
+}
+
+async function openPage(sourceAccount, value){
+  const keys = await makeKeys('inKeys', sourceAccount.keys.readFrom);
   try {
-    window.collab = await CKE5_Page.fromCID(sourceAccount, e.target.value, keys);
+    window.collab = await CKE5_Page.fromCID(sourceAccount, value, keys);
+    window.collab.cache = CKE5_Page.cache;
     await CKE5_Page.init(keys);
     console.log(`${window.collab.name}'s subpage links are: `, window.collab.links);
   } catch (err) {
-    console.error(`error opening ${e.target.value}`);
-  }
-})
+    console.error(`error opening ${value}`, err);
+  }  
+}
+
+async function writePage(){
+  const keys = await makeKeys('outKeys', sourceAccount.keys.writeTo);
+  const page = window.collab;
+  try {
+    console.log(`will persist ${page.name}, cid ${page.cid.toString()} with keys `, keys);
+    await page.write(page.name, keys);
+    await page.persist();
+    console.log(`${page.name} persisted to ${document.getElementById('sink').value} at ${page.cid.toString()}`);
+  } catch (err) {
+    console.error(`writing page ${page.name}`, err);
+  } 
+}
+
+function addOption(elId, value){
+  const option = document.createElement('option');
+  option.label = option.value = value;
+  document.getElementById(elId).appendChild(option);
+}
+document.getElementById('write').addEventListener('click', writePage);
+document.getElementById('inKeys').addEventListener('change', function(e){
+  document.getElementById('addFrom').hidden =  e.target.value !== 'add';
+});
+document.getElementById('outKeys').addEventListener('change', function(e){
+  document.getElementById('addTo').hidden = e.target.value !== 'add';
+});
+document.getElementById('addFrom').addEventListener('change', function(e){
+  addOption('inKeys', e.target.value);
+});
+document.getElementById('addTo').addEventListener('change', function(e){
+  addOption('outKeys', e.target.value);
+});
+document.getElementById('sink').addEventListener('change', function(e){
+  if(e.target.value === 'ipfs')
+    CKE5_Page.sink.url = (cid) => typeof cid === 'string' ? `https://motia.com/api/v1/ipfs/pin/add?arg=${cid}` :
+                       `  https://motia.com/api/v1/ipfs/block/put?cid-codec=${CKE5_Page.codecForCID(cid).name}`;
+  else
+    CKE5_Page.source.url = false;
+  console.log(`have set sink url to: `, CKE5_Page.sink);
+});
+document.getElementById('source').addEventListener('change', function(e){
+  if(e.target.value === 'ipfs')
+    CKE5_Page.source.url = (cid) => `https://motia.infura-ipfs.io/ipfs/${cid.toString()}`;
+  else
+    CKE5_Page.source.url = false;
+  console.log(`have set source url to: `, CKE5_Page.source);
+});
+//window.collab = await CKE5_Page.fromSigningAccount(sourceAccount, qP.label, keys);
+
+document.getElementById('address').addEventListener('change', function(e){
+  console.log(`detected address selection ${e.target.value}`);
+  const addOption = e.target.value !== 'add';
+  if(addOption)
+    openPage(sourceAccount, e.target.value);
+  document.getElementById('addAddress').hidden = addOption;
+});
+document.getElementById('addAddress').addEventListener('change', function(e){
+  console.log(`detected new address input ${e.target.value}`);
+  document.getElementById('addAddress').hidden = true;
+  openPage(sourceAccount, e.target.value);
+  addOption('address', e.target.value);
+});
+
+for(const key of Object.keys(localStorage)){
+  addOption('address', key);
+}
 //window.collab = await CKE5_Page.fromCID(sourceAccount, qP.address, keys);
 //await CKE5_Page.init(keys);
 //CKE5_Page.publishPlaintext(window.collab, keys, 'tssDoc');
