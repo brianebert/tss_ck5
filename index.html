@@ -31,7 +31,7 @@
 		</style>
 	</head>
 	<body style="margin:0;padding:0% 5%;" data-editor="ClassicEditor" data-collaboration="false" data-revision-history="false">
-		<div>
+		<div id="topBar">
 			<span>
 				<label>read</label>
 				<select id="address">
@@ -128,14 +128,33 @@
 						<span>
 							<button id="editButton" type="button">Edit Document</button>
 						</span>
-						<span class="pageControls" hidden>
-							<label>Add Subpage:</label>
+						<span id="editSelect" hidden>
+							<select id="editSelector">
+								<option value="" selected>Select From</option>
+								<option value="newPage">New Page:</option>
+								<option value="linkPage">Link Page:</option>
+								<option value="unlinkPage">Unlink Page:</option>
+								<option value="rmPage">Delete Page:</option>
+							</select>
+						</span>
+						<span id="newPage" class="pageControls" hidden>
 							<input id="pageName" type="text" placeholder="NAME" size="5" pattern="^((?!up|UP|Up|home|Home|HOME).)*$"
 										 style="font-size:inherit; border: inherit; outline: inherit;"/>
 						</span>
-						<span style="border: none;outline: none;" class="pageControls" hidden>
-							<label for="rmSelect">Delete Subpage:</label>
-							<select id="rmSelect"></select>
+						<span id="linkPage" class="pageControls" hidden>
+							<input id="linkName" type="text" placeholder="NAME" size="5" pattern="^((?!up|UP|Up|home|Home|HOME).)*$"
+										 style="font-size:inherit; border: inherit; outline: inherit;"/>
+							<label>To Page:</label>
+							<input id="linkAddress" type="text" placeholder="ADDRESS" size="5" pattern="^((?!up|UP|Up|home|Home|HOME).)*$"
+										 style="font-size:inherit; border: inherit; outline: inherit;"/>
+						</span>
+						<span id="unlinkPage" class="pageControls" hidden>
+							<input id="unlinkName" type="text" placeholder="NAME" size="5" pattern="^((?!up|UP|Up|home|Home|HOME).)*$"
+										 style="font-size:inherit; border: inherit; outline: inherit;"/>
+						</span>
+						<span id="rmPage" class="pageControls" style="border: none;outline: none;" hidden>
+							<input id="rmPageName" type="text" placeholder="ADDRESS" size="8" pattern="^((?!up|UP|Up|home|Home|HOME).)*$"
+										 style="font-size:inherit; border: inherit; outline: inherit;"/>
 						</span>
 					</span>
 				</div>

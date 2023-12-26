@@ -51,11 +51,11 @@ export class CK_Watchdog {
         console.log(`detected editor content change at: ${new Date()}`);
         window.addEventListener('beforeunload', CK_Watchdog.beforeUnloadListener, {capture: true});
         saveButton.style.background = '#ffcccc'; // a light pink
-        saveButton.disabled = false
+        //saveButton.disabled = false
       } else {
         window.removeEventListener('beforeunload', CK_Watchdog.beforeUnloadListener, {capture: true});      
         saveButton.style.background = '#ccffcc'; // a light green
-        saveButton.disabled = true
+       // saveButton.disabled = true
       }
     });
     return editor

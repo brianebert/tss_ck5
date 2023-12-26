@@ -6,7 +6,7 @@ class CKE5_Page extends Encrypted_Node {
   constructor(args){
     super(args);
     // these are the elements that need listeners stripped when changing pages
-    this.elIds = ['editingPage', 'pageName', 'pageSelect', 'rmSelect', 'upButton'];
+    this.elIds = ['editingPage', 'pageName', 'pageSelect', 'upButton', 'rmAddress', 'unlinkName', 'linkAddress', 'linkName']; // edit instances of rmSelect 
     this.editorEl = document.querySelector('.editor');
   }
 
@@ -42,6 +42,11 @@ console.log(`entered init() with keys: `, keys);
     homeButton.value = window.collab.cid.toString();
     homeButton.addEventListener('click', e => CKE5_Page.enterPage(e, window.collab.signingAccount));
     document.getElementById('editingRoot').value = homeButton.value;
+    document.getElementById('editSelect').addEventListener('change', function(e){
+      Array.from(document.getElementsByClassName('pageControls')).forEach(el => el.hidden = true);
+      if(e.target.value.length)
+        document.getElementById(e.target.value).hidden = false;
+    })
     this.refreshPageview();
     //await this.populatePageSelect(window.collab, keys, window.collab.cid.toString());
     console.log(`cache state is: `, CKE5_Page.cache);
@@ -93,8 +98,12 @@ console.log(`creating page select option ${page.name}, value ${page.cid.toString
     const editor = window.watchdog.editor;
     const pageSelectLabel = bool ? 'Reading Page: ' : 'Editing Page: ';
     bool ? editor.enableReadOnlyMode(this.lockId) : editor.disableReadOnlyMode(this.lockId);
-    Array.from(document.getElementsByClassName('pageControls')).forEach(el => el.hidden = bool);
+
+    Array.from(document.getElementsByClassName('pageControls')).forEach(el => el.hidden = true);
+    document.getElementById('editSelect').hidden = bool
+
     document.getElementById('pageSelectLabel').textContent = pageSelectLabel;
+    document.getElementById('saveButton').disabled = bool;
     document.getElementById('editButton').hidden = !bool;
   }
 
@@ -108,6 +117,7 @@ console.log(`creating page select option ${page.name}, value ${page.cid.toString
     for(const elId of node.elIds){
       // strip listeners from elements of UI
       const el = document.getElementById(elId);
+console.log(`calling replaceWith() on element id ${elId}`);
       el.replaceWith(node.elements[elId] = el.cloneNode(true));
     }
 
@@ -134,28 +144,30 @@ console.log(`creating page select option ${page.name}, value ${page.cid.toString
     }
 
     subpagesEl.innerHTML = '';
-    node.elements['rmSelect'].innerHTML = `<option>select page</option>`;
+    //node.elements['rmSelect'].innerHTML = `<option>choose from</option>`;
     const linkKeys = Object.keys(node.links);
     if(linkKeys.length)
       for(const key of linkKeys)
         if(!key.endsWith('_last')){
           const [button, option] = this.pageLinkingElements(key, node.links[key].toString());
-          node.elements['rmSelect'].appendChild(option);
+          //node.elements['rmSelect'].appendChild(option);
           subpagesEl.appendChild(button);
         }
 
     document.getElementById('editButton').addEventListener('click', e => CKE5_Page.readOnlyMode(false));
-    document.getElementById('saveButton').addEventListener('click', e => 
-      window.watchdog.editor.plugins.get('Autosave').save(window.watchdog.editor).then(() => 
-        this.readOnlyMode(true)
-      )
-    );
+    document.getElementById('saveButton').addEventListener('click', async e => {
+      const autoSave = window.watchdog.editor.plugins.get('Autosave');
+      console.log(`autoSave is: `, autoSave);
+      if(autoSave.status === 'waiting')
+        await autoSave.save(window.watchdog.editor);
+      this.readOnlyMode(true);
+    });
     document.getElementById('subpagesLabel').hidden = !subpagesEl.children.length;
     for(let i = 0; i < subpagesEl.children.length; i++)
       subpagesEl.children[i].addEventListener('click', e => CKE5_Page.enterPage(e, node.signingAccount));
 
     node.elements.pageSelect.addEventListener('change', e => CKE5_Page.enterPage(e, node.signingAccount));
-    node.elements.rmSelect.addEventListener('change', e => node.rmSubpage(e));
+    //node.elements.rmSelect.addEventListener('change', e => node.rmSubpage(e));
     node.elements.pageName.addEventListener('change', e => node.addSubpage(e));
     node.elements.pageName.addEventListener('keydown', e => node.elements.pageName.size++);
     node.elements.pageName.addEventListener('keyup', e => {
@@ -196,12 +208,13 @@ console.log(`creating page select option ${page.name}, value ${page.cid.toString
         const [button, option] = CKE5_Page.pageLinkingElements(subpage.name, subpage.cid.toString());
         button.addEventListener('click', e => CKE5_Page.enterPage(e, this.signingAccount))
         document.getElementById('subPages').appendChild(button);
-        document.getElementById('rmSelect').appendChild(option);
+        //document.getElementById('rmSelect').appendChild(option);
         //Encrypted_Node.persist(root.signingAccount,qP.label, root.cid, keys);
         return CKE5_Page.populatePageSelect(root, keys, this.cid.toString());
       })
   }
 
+  // this will crash if called because rmSelect does not exist.
   rmSubpage(evt){
     const name = Array.from(evt.target.selectedOptions).pop().label;
     if(!confirm(`Are you sure you want to remove page ${name}? (and all of its subpages!`)){
@@ -211,7 +224,7 @@ console.log(`creating page select option ${page.name}, value ${page.cid.toString
     delete this.value[name];
     // ¡¡¡remove select option last of all UI components!!!
     Array.from(document.getElementById('subPages').children).filter(but => but.value === evt.target.value).pop().remove();
-    Array.from(document.getElementById('rmSelect').children).filter(opt => opt.value === evt.target.value).pop().remove();
+    //Array.from(document.getElementById('rmSelect').children).filter(opt => opt.value === evt.target.value).pop().remove();
     document.getElementById('subpagesLabel').hidden = !document.getElementById('subPages').children.length;
     window.watchdog.editor.plugins.get('Autosave').save(window.watchdog.editor);
   }
