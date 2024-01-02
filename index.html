@@ -32,12 +32,12 @@
 	</head>
 	<body style="margin:0;padding:0% 5%;" data-editor="ClassicEditor" data-collaboration="false" data-revision-history="false">
 		<div id="topBar">
+			<div>
 			<span>
 				<label>read</label>
 				<select id="address">
-					<option value="add">add</option>
+					<option value="from">page:</option>
 				</select>
-				<input id='addAddress' type='text' hidden/>
 			</span>
 			<span>
 				<label>from</label>
@@ -56,6 +56,12 @@
 				<input id='addFrom' type='text' hidden/>
 			</span>
 			<span>
+				<label for="traverse">traverse</label>
+				<input type="checkbox" id="traverse"/>
+			</span>
+			</div>
+			<div>
+			<span>
 				<label>write to</label>
 				<select id="sink">
 					<option value="localStorage">localStorage</option>
@@ -72,6 +78,7 @@
 				<input id='addTo' type='text' hidden/>
 				<button id="write">write</button>
 			</span>
+			</div>
 		</div>
 		<div id="myContainer" class="editor" style="max-width:100%;"></div><!-- CKEditor5 writes into this div -->
 		<div style="border-color: #ccced1; border-radius: 2px; border-width: 1px; border-style: solid;">

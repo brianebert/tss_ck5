@@ -181,7 +181,13 @@ console.log(`calling replaceWith() on element id ${elId}`);
 
     node.elements.pageSelect.addEventListener('change', e => CKE5_Page.enterPage(e, node.signingAccount));
     //node.elements.rmSelect.addEventListener('change', e => node.rmSubpage(e));
-    node.elements.pageName.addEventListener('change', e => CKE5_Page.addPage(e, node.signingAccount));
+    node.elements.pageName.addEventListener('change', e => {
+      openPage(node.signingAccount, null, e.target.value);
+      Array.from(document.getElementById('editSelector').children).map(child => child.selected = !child.value.length);
+      const spans = document.getElementsByClassName('pageControls');
+      for(let i=0; i < spans.length; i++)
+        spans[i].hidden = true;
+    });
     const nameInputs = Object.keys(node.elements).filter(key => key.endsWith('Name'));
 console.log(`filtered ${nameInputs.length} name input elments: `, nameInputs);
     for(const input of nameInputs){
@@ -314,7 +320,7 @@ function makeKeys(keyElId, keyFn){
 
 }
 
-async function openPage(sourceAccount, address=null){
+async function openPage(sourceAccount, address=null, name=''){
   const keys = await makeKeys('inKeys', sourceAccount.keys.readFrom);
   try {
     if(CKE5_Page.isValidAddress(address)){
@@ -322,7 +328,7 @@ async function openPage(sourceAccount, address=null){
       await CKE5_Page.init(keys);
     }
     else {
-      window.collab = await new CKE5_Page({colName: ''}, sourceAccount).ready;
+      window.collab = await new CKE5_Page({colName: name}, sourceAccount).ready;
       //await window.collab.ready;
       CKE5_Page.refreshPageview();
     }
@@ -381,18 +387,17 @@ document.getElementById('source').addEventListener('change', function(e){
 });
 //window.collab = await CKE5_Page.fromSigningAccount(sourceAccount, qP.label, keys);
 
+let firstPageSelection = true;
 document.getElementById('address').addEventListener('change', function(e){
+  if(firstPageSelection){
+    Array.from(e.target.children).filter(child => child.value === 'from').pop().remove();
+    firstPageSelection = false;
+  }
   console.log(`detected address selection ${e.target.value}`);
-  const addOption = e.target.value !== 'add';
-  if(addOption)
+  if(e.target.value !== 'from')
     openPage(sourceAccount, e.target.value);
-  document.getElementById('addAddress').hidden = addOption;
-});
-document.getElementById('addAddress').addEventListener('change', function(e){
-  console.log(`detected new address input ${e.target.value}`);
-  document.getElementById('addAddress').hidden = true;
-  openPage(sourceAccount, e.target.value);
-  addOption('address', e.target.value);
+  else
+    openPage(sourceAccount);
 });
 
 for(const key of Object.keys(localStorage)){
