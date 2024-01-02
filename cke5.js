@@ -6,8 +6,17 @@ class CKE5_Page extends Encrypted_Node {
   constructor(args){
     super(args);
     // these are the elements that need listeners stripped when changing pages
-    this.elIds = ['editingPage', 'pageName', 'pageSelect', 'upButton', 'rmAddress', 'unlinkName', 'linkAddress', 'linkName']; // edit instances of rmSelect 
+    this.elIds = ['editingPage', 'editingRoot', 'pageName', 'pageSelect',
+                  'upButton', 'rmAddress', 'unlinkName', 'linkAddress',
+                  'linkName']; // edit instances of rmSelect 
     this.editorEl = document.querySelector('.editor');
+  }
+
+  static async addPage(e, signingAccount){
+    const name = e.target.value;
+    console.log(`in addPage with name ${name} and signingAccount: `, signingAccount);
+    window.collab = await new CKE5_Page({colName: name, editorContents: ''}, signingAccount).write(name);
+    this.refreshPageview(e)
   }
 
   static async enterPage(event, signingAccount){
@@ -127,6 +136,7 @@ console.log(`calling replaceWith() on element id ${elId}`);
       node.editorEl.innerHTML = node.value.editorContents;
     } else {
       node.elements.editingPage.value = '';
+      node.elements.editingRoot.value = '';
       node.editorEl.innerHTML = '';
     }
 
@@ -154,11 +164,14 @@ console.log(`calling replaceWith() on element id ${elId}`);
           subpagesEl.appendChild(button);
         }
 
-    document.getElementById('editButton').addEventListener('click', e => CKE5_Page.readOnlyMode(false));
+    document.getElementById('editButton').addEventListener('click', e => {
+      console.log(`clicked editButton`);
+      return CKE5_Page.readOnlyMode(false)
+    });
     document.getElementById('saveButton').addEventListener('click', async e => {
       const autoSave = window.watchdog.editor.plugins.get('Autosave');
       console.log(`autoSave is: `, autoSave);
-      if(autoSave.status === 'waiting')
+      if(autoSave.state === 'waiting')
         await autoSave.save(window.watchdog.editor);
       this.readOnlyMode(true);
     });
@@ -168,15 +181,28 @@ console.log(`calling replaceWith() on element id ${elId}`);
 
     node.elements.pageSelect.addEventListener('change', e => CKE5_Page.enterPage(e, node.signingAccount));
     //node.elements.rmSelect.addEventListener('change', e => node.rmSubpage(e));
-    node.elements.pageName.addEventListener('change', e => node.addSubpage(e));
-    node.elements.pageName.addEventListener('keydown', e => node.elements.pageName.size++);
+    node.elements.pageName.addEventListener('change', e => CKE5_Page.addPage(e, node.signingAccount));
+    const nameInputs = Object.keys(node.elements).filter(key => key.endsWith('Name'));
+console.log(`filtered ${nameInputs.length} name input elments: `, nameInputs);
+    for(const input of nameInputs){
+      const el = node.elements[input];
+      el.addEventListener('keydown', e => el.size++);
+      el.addEventListener('keyup', e => {
+        el.size = el.value.length ? el.value.length : 1;
+        e.target.setCustomValidity('');
+        if(!e.target.reportValidity())
+          e.target.setCustomValidity(`name cannot be ${e.target.value}`);
+      });
+    }
+
+    /*node.elements.pageName.addEventListener('keydown', e => node.elements.pageName.size++);
     node.elements.pageName.addEventListener('keyup', e => {
       const value = node.elements.pageName.value;
       node.elements.pageName.size = value.length ? value.length : 1;
       e.target.setCustomValidity('');
       if(!e.target.reportValidity())
         e.target.setCustomValidity(`name cannot be ${e.target.value}`);
-    });
+    });*/
 
     // set page selector to current page
     const pages = node.elements['pageSelect'].children;
@@ -288,15 +314,22 @@ function makeKeys(keyElId, keyFn){
 
 }
 
-async function openPage(sourceAccount, value){
+async function openPage(sourceAccount, address=null){
   const keys = await makeKeys('inKeys', sourceAccount.keys.readFrom);
   try {
-    window.collab = await CKE5_Page.fromCID(sourceAccount, value, keys);
-    window.collab.cache = CKE5_Page.cache;
-    await CKE5_Page.init(keys);
+    if(CKE5_Page.isValidAddress(address)){
+      window.collab = await CKE5_Page.fromCID(sourceAccount, address, keys);
+      await CKE5_Page.init(keys);
+    }
+    else {
+      window.collab = await new CKE5_Page({colName: ''}, sourceAccount).ready;
+      //await window.collab.ready;
+      CKE5_Page.refreshPageview();
+    }
+    window.collab.cache = CKE5_Page.cache; // here for debugging. Can remove later
     console.log(`${window.collab.name}'s subpage links are: `, window.collab.links);
   } catch (err) {
-    console.error(`error opening ${value}`, err);
+    console.error(`error opening ${address}`, err);
   }  
 }
 
@@ -365,6 +398,8 @@ document.getElementById('addAddress').addEventListener('change', function(e){
 for(const key of Object.keys(localStorage)){
   addOption('address', key);
 }
+
+openPage(sourceAccount);
 //window.collab = await CKE5_Page.fromCID(sourceAccount, qP.address, keys);
 //await CKE5_Page.init(keys);
 //CKE5_Page.publishPlaintext(window.collab, keys, 'tssDoc');
