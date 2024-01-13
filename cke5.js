@@ -1,6 +1,7 @@
 import {Encrypted_Node, SigningAccount} from '@brianebert/tss';
 import {CK_Watchdog} from './editor.js';
 
+// just in case you find a good way to pass this in
 const sourceAccountSecret = null;
 
   // Parse the url for Stellar account number and data entry name where document's ipfs address is saved
@@ -8,14 +9,13 @@ let queryParameters = {};
 const segments = window.location.href.split('?');
 if(segments.length === 2)
   var entries = segments.pop().split('&').map(pair => pair.split('='));
+// check you've parsed key=value pairs
 if(entries.reduce((acc, entry) => acc && (entry.length === 2), true))
+  // then make Object from them
   queryParameters = Object.fromEntries(entries);
-  // did we get the right parameters in the query string?
-  //if(qP === undefined || !Object.hasOwn(qP, 'readFrom')/* || !Object.hasOwn(qP, 'address') || !Object.hasOwn(qP, 'writeTo') || !Object.hasOwn(qP, 'label')*/)
-    //throw new Error(`data root source must appear in url query string`)
 
   // create a SigningAccount, with keys if user agrees to sign
-  // a transaction used as a key seed
+  // a transaction signature is used as the key seed
   const sourceAccount = await SigningAccount.fromWallet(queryParameters.accountId);
   if(await SigningAccount.canSign(sourceAccount))
     await sourceAccount.deriveKeys(sourceAccountSecret, {asymetric: 'Asymetric', signing: 'Signing', shareKX: 'ShareKX'})
@@ -34,23 +34,25 @@ function BlockParameters(accountId){
       init: function(){
 console.log(`initializing this.source `, this);
         this.el.addEventListener('change', function(e){
-console.log(`executing address selector change on this  `, this);         
-          if(e.target.value === 'ipfs')
+console.log(`executing address selector change on this  `, this);
+          const addressInput = document.getElementById('addressInput');
+          const address = document.getElementById('address');
+          if(e.target.value === 'ipfs'){
             CKE5_Page.source.url = (cid) => `https://motia.infura-ipfs.io/ipfs/${cid.toString()}`;
-          else
+            addressInput.hidden = false;
+            address.hidden = true;
+          }
+          else { // else we assume it's localStorage
             CKE5_Page.source.url = false;
-          console.log(`have set source url to: `, CKE5_Page.source);
-          if(e.target.value === 'localStorage'){
-            document.getElementById('addressInput').hidden = true;
+            addressInput.hidden = true;
+            address.hidden = false;
+            address.innerHTML = '';
             for(const key of Object.keys(localStorage))
               addOption('address', key);
-          } else {
-            this.el = document.getElementById('addressInput');
-            document.getElementById('address').hidden = true;
+            address.dispatchEvent(new Event('change'));
           }
-          this.el.hidden = false;
+          console.log(`have set source url to: `, CKE5_Page.source);
         }.bind(this));
-        this.el.dispatchEvent(new Event('change'));
       }
     };
   this.inKeys = {
@@ -64,6 +66,9 @@ console.log(`executing address selector change on this  `, this);
     };
   this.address = {
       init: function(){
+        if(document.getElementById('source').value === 'localStorage')
+          for(const key of Object.keys(localStorage))
+            addOption('address', key);
         for(const el of document.getElementsByClassName('addressInputs'))
           el.addEventListener('change', e => CKE5_Page.openPage(sourceAccount, e.target.value));
       }
@@ -75,8 +80,8 @@ console.log(`executing address selector change on this  `, this);
             CKE5_Page.sink.url = (cid) => typeof cid === 'string' ? `https://motia.com/api/v1/ipfs/pin/add?arg=${cid}` :
                        `          https://motia.com/api/v1/ipfs/block/put?cid-codec=${CKE5_Page.codecForCID(cid).name}`;
            else
-            CKE5_Page.source.url = false;
-          console.log(`have set sink url to: `, CKE5_Page.sink);
+            CKE5_Page.sink.url = false;
+          console.log(`have set sink url to: `, CKE5_Page.sink.url);
         })
       }
     };
@@ -118,14 +123,14 @@ console.log(`initialized ${key}`);
 
 class CKE5_Page extends Encrypted_Node {
   #root;
-  constructor(value, signingAccount){
-console.log(`creating CKE5_Page from arguments: `, arguments);
-    super(value, signingAccount);
+  constructor(){
+console.log(`creating CKE5_Page from arguments: `, ...arguments);
+    super(...arguments);
     this.#root = this.cid;
 
     // below are elements that need listeners stripped when changing pages
     this.elIds = ['editingPage', 'editingRoot', 'pageName', 'pageSelect', 'editSelect',
-                  'upButton', 'rmAddress', 'unlinkName', 'linkAddress',
+                  'upButton', 'rmAddress', 'unlinkName', 'linkAddress', 'editButton',
                   'linkName']; // edit instances of rmSelect 
     // element editor uses
     this.editorEl = document.querySelector('.editor');
@@ -142,7 +147,7 @@ console.log(`creating CKE5_Page from arguments: `, arguments);
     console.log(`in addPage with name ${name} and signingAccount: `, signingAccount);
     window.collab = await new CKE5_Page({colName: name, editorContents: ''}, signingAccount).write(name);
     this.refreshPageview(e)
-  }*/
+  }
 
   static async enterPage(event, signingAccount){
     let savedEditor = false;
@@ -184,7 +189,7 @@ console.log(`entered init() with keys: `, keys);
     this.refreshPageview();
     //await this.populatePageSelect(window.collab, keys, window.collab.cid.toString());
     console.log(`cache state is: `, CKE5_Page.cache);
-  }
+  }*/
 
   static async openPage(signingAccount, address=null, name=''){
   console.log(`entered openPage() with name ${name}, address ${address} signingAccount `, signingAccount);
@@ -212,7 +217,7 @@ console.log(`entered init() with keys: `, keys);
     }
     
     try {
-      if(this.isValidAddress(address)){
+      if(address){
   console.log(`reading page from address ${address} with keys `, keys);
         window.collab = await this.fromCID(signingAccount, address, keys);
         //await CKE5_Page.init(keys);
@@ -341,7 +346,7 @@ console.log(`calling replaceWith() on element id ${elId}`);
           subpagesEl.appendChild(button);
         }
 
-    document.getElementById('editButton').addEventListener('click', e => {
+    node.elements.editButton.addEventListener('click', e => {
       console.log(`clicked editButton`);
       return CKE5_Page.readOnlyMode(false)
     });
@@ -361,12 +366,20 @@ console.log(`calling replaceWith() on element id ${elId}`);
     node.elements.editSelect.addEventListener('change', e => {
       Array.from(document.getElementsByClassName('pageControls')).map(el => el.hidden = el.id !== e.target.value)
     })
-console.log(`${node.name} is setting pageName change listener with signingAccount`, node.signingAccount);
+
     node.elements.pageName.addEventListener('change', e => {
-console.log(`change event listener executing with window.collab.signingAccount `, window.collab.signingAccount);
-      this.openPage(window.collab.signingAccount, null, e.target.value);
+      this.openPage(node.signingAccount, null, e.target.value);
       document.getElementById('newPage').hidden = true
     });
+
+    node.elements.rmAddress.addEventListener('change', e => {
+      const addressSelect = this.blockParameters.address.el;
+      Array.from(addressSelect.children).filter(child => child.value === e.target.value).map(child => child.remove());
+      //el.innerHTML = Array.from(el.children).filter(child => child.value !== e.target.value);
+      addressSelect.dispatchEvent(new Event('change'));
+      this.rm(e.target.value)
+    });
+
     const nameInputs = Object.keys(node.elements).filter(key => key.endsWith('Name'));
 console.log(`filtered ${nameInputs.length} name input elments: `, nameInputs);
     for(const input of nameInputs){
@@ -379,15 +392,6 @@ console.log(`filtered ${nameInputs.length} name input elments: `, nameInputs);
           e.target.setCustomValidity(`name cannot be ${e.target.value}`);
       });
     }
-
-    /*node.elements.pageName.addEventListener('keydown', e => node.elements.pageName.size++);
-    node.elements.pageName.addEventListener('keyup', e => {
-      const value = node.elements.pageName.value;
-      node.elements.pageName.size = value.length ? value.length : 1;
-      e.target.setCustomValidity('');
-      if(!e.target.reportValidity())
-        e.target.setCustomValidity(`name cannot be ${e.target.value}`);
-    });*/
 
     // set page selector to current page
     const pages = node.elements['pageSelect'].children;
@@ -423,7 +427,7 @@ console.log(`filtered ${nameInputs.length} name input elments: `, nameInputs);
         //Encrypted_Node.persist(root.signingAccount,qP.label, root.cid, keys);
         return CKE5_Page.populatePageSelect(root, keys, this.cid.toString());
       })
-  }*/
+  }
 
   // this will crash if called because rmSelect does not exist.
   rmSubpage(evt){
@@ -438,7 +442,7 @@ console.log(`filtered ${nameInputs.length} name input elments: `, nameInputs);
     //Array.from(document.getElementById('rmSelect').children).filter(opt => opt.value === evt.target.value).pop().remove();
     document.getElementById('subpagesLabel').hidden = !document.getElementById('subPages').children.length;
     window.watchdog.editor.plugins.get('Autosave').save(window.watchdog.editor);
-  }
+  }*/
 
   // do not call directly. It will be called by the Editor's autosave module.
   saveData(editor){
@@ -449,16 +453,16 @@ console.log(`filtered ${nameInputs.length} name input elments: `, nameInputs);
 console.log(`encrypting for self with keys `, keys);
     return this.update(value, keys).then(root => {
       this.#root = root.cid;
-      document.getElementById('homeButton').value = root.cid.toString();
+      document.getElementById('homeButton').value = this.#root.toString();
       if(this.parents.length)
         // this needs to take into account when there are more than one parent.
         document.getElementById('upButton').value = this.parents[0].cid.toString();
       //if(SigningAccount.canSign(root.signingAccount))
         //Encrypted_Node.persist(root.signingAccount,qP.label, root.cid, keys);
-      document.getElementById('editingRoot').value = root.cid.toString();
+      document.getElementById('editingRoot').value = this.#root.toString();
       document.getElementById('editingPage').value = this.cid.toString();
       if(CKE5_Page.blockParameters.traverse)
-        CKE5_Page.populatePageSelect(root, this.signingAccount.keys.readFrom('self'), this.cid.toString());
+        CKE5_Page.populatePageSelect(this.#root, this.signingAccount.keys.readFrom('self'), this.cid.toString());
     })
   }
 }
