@@ -142,54 +142,36 @@ console.log(`creating CKE5_Page from arguments: `, ...arguments);
 
   static blockParameters;
 
-/*  static async addPage(e, signingAccount){
-    const name = e.target.value;
-    console.log(`in addPage with name ${name} and signingAccount: `, signingAccount);
-    window.collab = await new CKE5_Page({colName: name, editorContents: ''}, signingAccount).write(name);
-    this.refreshPageview(e)
-  }
-
-  static async enterPage(event, signingAccount){
-    let savedEditor = false;
-    if(window?.watchdog){
-      const editor = window.watchdog.editor;
-      const pendingActions = editor.plugins.get('PendingActions');
-      if(Array.from(pendingActions).filter(pa => pa.message === 'Saving changes').length){
-        console.log(`must save ${window.collab.name} before loading new page`);
-        await editor.plugins.get('Autosave').save(editor);
-        savedEditor = true;
-      }
+  static async mapPages(root, keys, selectValue){
+console.log(`populating page selector for ${root.name} with ${selectValue} selected.`);
+    const subPageLinks = Array.from(document.getElementById('subPages').children);
+    subPageLinks.map(link => link.disabled = true);
+    const el = document.getElementById('pageSelect');
+    el.disabled = true;
+    el.innerHTML = '';
+    const opts = [];
+    function populateSelectOption(page, depth){
+console.log(`creating page select option ${page.name}, value ${page.cid.toString()}`);
+      const pageOption = document.createElement('option');
+      let indent;
+      for(indent=''; depth; depth--)
+        indent += '**|';
+      pageOption.label = indent + ' ' + page.name;
+      pageOption.value = page.cid.toString();
+      pageOption.selected = pageOption.value === selectValue;
+      opts.unshift(pageOption);
+      return Promise.resolve();
     }
-    
-    const ec25519 = signingAccount.ec25519;
-    const keys = ec25519 ? {writer: ec25519.pk, reader: ec25519.sk} : null;
-    window.collab = await this.fromCID(signingAccount, event.target.value, keys);
-    console.log(`set window.collab to: `, window.collab);
-    this.refreshPageview();
-    if(savedEditor){
-      const root = CKE5_Page.cache.filter(page => page.parents.length === 0).pop();
-      console.log(`filtered cache for root: `, root);
-      const ec25519 = root.signingAccount.ec25519;
-      const keys = ec25519 ? {reader: ec25519.sk, writer: ec25519.pk} : null;
-      this.populatePageSelect(root, keys, window.collab.cid.toString());
+    if(CKE5_Page.blockParameters.traverse.value){
+      await this.traverse(root.cid, populateSelectOption, keys);
+      subPageLinks.map(link => link.disabled = false);
     }
+    else
+      populateSelectOption(root, 0);
+    for(const option of opts)
+      el.append(option);
+    el.disabled = false;
   }
-
-  static async init(keys){
-console.log(`entered init() with keys: `, keys);
-    const homeButton = document.getElementById('homeButton');
-    homeButton.value = window.collab.cid.toString();
-    homeButton.addEventListener('click', e => CKE5_Page.enterPage(e, window.collab.signingAccount));
-    document.getElementById('editingRoot').value = homeButton.value;
-    document.getElementById('editSelect').addEventListener('change', function(e){
-      Array.from(document.getElementsByClassName('pageControls')).forEach(el => el.hidden = true);
-      if(e.target.value.length)
-        document.getElementById(e.target.value).hidden = false;
-    })
-    this.refreshPageview();
-    //await this.populatePageSelect(window.collab, keys, window.collab.cid.toString());
-    console.log(`cache state is: `, CKE5_Page.cache);
-  }*/
 
   static async openPage(signingAccount, address=null, name=''){
   console.log(`entered openPage() with name ${name}, address ${address} signingAccount `, signingAccount);
@@ -232,50 +214,10 @@ console.log(`entered init() with keys: `, keys);
       CKE5_Page.refreshPageview();
       window.collab.cache = this.cache; // here for debugging. Can remove later
       console.log(`${window.collab.name}'s subpage links are: `, window.collab.links);
+      return window.collab
     } catch (err) {
       console.error(`error opening ${address}`, err);
     }  
-  }
-
-
-  /*static pageLinkingElements(key, value){
-    const button = document.createElement('button');
-    const option = document.createElement('option');
-    button.type = 'button';
-    button.textContent = key;
-    button.value = value;
-    option.value = value;
-    option.label = key;
-    return [button, option] 
-  }*/
-
-  // populates page selector with options indented to create a site map.
-  // calling .traverse() adds backlinks to parent COL_Nodes.
-  static async populatePageSelect(root, keys, selectValue){
-console.log(`populating page selector for ${root.name} with ${selectValue} selected.`);
-    const subPageLinks = Array.from(document.getElementById('subPages').children);
-    subPageLinks.forEach(link => link.disabled = true);
-    const el = document.getElementById('pageSelect');
-    el.disabled = true;
-    el.innerHTML = '';
-    const opts = [];
-    function populateSelectOption(page, depth){
-console.log(`creating page select option ${page.name}, value ${page.cid.toString()}`);
-      const pageOption = document.createElement('option');
-      let indent;
-      for(indent=''; depth; depth--)
-        indent += '**|';
-      pageOption.label = indent + ' ' + page.name;
-      pageOption.value = page.cid.toString();
-      pageOption.selected = pageOption.value === selectValue;
-      opts.unshift(pageOption);
-      return Promise.resolve();
-    }
-    await this.traverse(root.cid, populateSelectOption, keys);
-    for(const option of opts)
-      el.append(option);
-    el.disabled = false;
-    subPageLinks.forEach(link => link.disabled = false);
   }
 
   static lockId = Symbol();
@@ -367,8 +309,9 @@ console.log(`calling replaceWith() on element id ${elId}`);
       Array.from(document.getElementsByClassName('pageControls')).map(el => el.hidden = el.id !== e.target.value)
     })
 
-    node.elements.pageName.addEventListener('change', e => {
-      this.openPage(node.signingAccount, null, e.target.value);
+    node.elements.pageName.addEventListener('change', async e => {
+      const page = await this.openPage(node.signingAccount, null, e.target.value);
+      await this.mapPages(page) // keys, selectValue not needed since only will create the one option
       document.getElementById('newPage').hidden = true
     });
 
@@ -408,50 +351,14 @@ console.log(`filtered ${nameInputs.length} name input elments: `, nameInputs);
     window.scroll(0,0);
   }
 
-  /*addSubpage(evt){
-    const name = evt.target.value;
-    evt.target.value = ''; // ¡¡¡ must go before setting evt.target.size !!!
-    evt.target.size = evt.target.placeholder.length + 1;
-    console.log(`called addSubpage(${name}) on node: `, this);
-    const subpage = new CKE5_Page({colName: name}, this.signingAccount);
-    const ec25519 = this.signingAccount.ec25519;
-    const keys = ec25519 ? {writer: ec25519.sk, reader: ec25519.pk} : null;
-    return this.insert(subpage, name, keys)
-      .then(root => {
-        document.getElementById('editingPage').value = this.cid.toString();
-        document.getElementById('editingRoot').value = root.cid.toString();
-        const [button, option] = CKE5_Page.pageLinkingElements(subpage.name, subpage.cid.toString());
-        button.addEventListener('click', e => CKE5_Page.enterPage(e, this.signingAccount))
-        document.getElementById('subPages').appendChild(button);
-        //document.getElementById('rmSelect').appendChild(option);
-        //Encrypted_Node.persist(root.signingAccount,qP.label, root.cid, keys);
-        return CKE5_Page.populatePageSelect(root, keys, this.cid.toString());
-      })
-  }
-
-  // this will crash if called because rmSelect does not exist.
-  rmSubpage(evt){
-    const name = Array.from(evt.target.selectedOptions).pop().label;
-    if(!confirm(`Are you sure you want to remove page ${name}? (and all of its subpages!`)){
-      document.getElementById('rmSelect').firstElementChild.selected = true;
-      return
-    }
-    delete this.value[name];
-    // ¡¡¡remove select option last of all UI components!!!
-    Array.from(document.getElementById('subPages').children).filter(but => but.value === evt.target.value).pop().remove();
-    //Array.from(document.getElementById('rmSelect').children).filter(opt => opt.value === evt.target.value).pop().remove();
-    document.getElementById('subpagesLabel').hidden = !document.getElementById('subPages').children.length;
-    window.watchdog.editor.plugins.get('Autosave').save(window.watchdog.editor);
-  }*/
-
   // do not call directly. It will be called by the Editor's autosave module.
-  saveData(editor){
+  async saveData(editor){
     console.log(`saving data for this: `, this);
     const value = Object.assign({}, this.value);
     value.editorContents = editor.getData();
-    const keys = this.signingAccount.keys.writeTo('self');
+    const keys = await this.signingAccount.keys.writeTo('self');
 console.log(`encrypting for self with keys `, keys);
-    return this.update(value, keys).then(root => {
+    return this.update(value, keys).then(async root => {
       this.#root = root.cid;
       document.getElementById('homeButton').value = this.#root.toString();
       if(this.parents.length)
@@ -459,10 +366,9 @@ console.log(`encrypting for self with keys `, keys);
         document.getElementById('upButton').value = this.parents[0].cid.toString();
       //if(SigningAccount.canSign(root.signingAccount))
         //Encrypted_Node.persist(root.signingAccount,qP.label, root.cid, keys);
-      document.getElementById('editingRoot').value = this.#root.toString();
+      document.getElementById('editingRoot').value = root.cid.toString();
       document.getElementById('editingPage').value = this.cid.toString();
-      if(CKE5_Page.blockParameters.traverse)
-        CKE5_Page.populatePageSelect(this.#root, this.signingAccount.keys.readFrom('self'), this.cid.toString());
+      CKE5_Page.mapPages(root, await this.signingAccount.keys.readFrom('self'), this.cid.toString());
     })
   }
 }
@@ -472,6 +378,4 @@ console.log(`encrypting for self with keys `, keys);
 CKE5_Page.blockParameters = new BlockParameters();
 CKE5_Page.blockParameters.address.el.dispatchEvent(new Event('change'))
 
-//window.collab = await CKE5_Page.fromCID(sourceAccount, qP.address, keys);
-//await CKE5_Page.init(keys);
 //CKE5_Page.publishPlaintext(window.collab, keys, 'tssDoc');
