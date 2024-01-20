@@ -37,10 +37,8 @@
 			<div>
 				<span>
 					<label>read</label>
-					<span>
-						<select id="address" class="addressInputs" onautocomplete="on"></select>
-						<input id="addressInput" class="addressInputs" type="text" hidden/>
-					</span>
+					<input id="addressInput" type="text" list="addresses" placeholder="Document Address">
+					<datalist id='addresses'></datalist>
 				</span>
 				<span>
 					<label>from</label>
@@ -84,8 +82,20 @@
 					<input id='addTo' type='text' hidden/>
 				</span>
 				<span>
-					<label>root name</label>
-					<input id='rootName' type='text'/>
+					<label for="nameHash">name hash</label>
+					<select id="nameIt">
+						<option value="0" selected>no</option>
+						<option value="1">yes</option>
+					</select>
+				</span>
+				<span class="hashName">
+					<label>at stellar account</label>
+					<select id='accountId'/></select>
+				</span>
+				<span class="hashName">
+					<label>data entry</label>
+					<input id='dataEntryLabel' type='text' list="dataEntries">
+						<datalist id='dataEntries'></datalist>
 				</span>
 			</div>
 		</div>

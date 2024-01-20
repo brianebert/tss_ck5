@@ -5,72 +5,73 @@ import {CK_Watchdog} from './editor.js';
 const sourceAccountSecret = null;
 
   // Parse the url for Stellar account number and data entry name where document's ipfs address is saved
-let queryParameters = {};
+let queryParameters = {}; let entries = [];
 const segments = window.location.href.split('?');
 if(segments.length === 2)
-  var entries = segments.pop().split('&').map(pair => pair.split('='));
+  entries = segments.pop().split('&').map(pair => pair.split('='));
 // check you've parsed key=value pairs
 if(entries.reduce((acc, entry) => acc && (entry.length === 2), true))
   // then make Object from them
   queryParameters = Object.fromEntries(entries);
 
-  // create a SigningAccount, with keys if user agrees to sign
-  // a transaction signature is used as the key seed
-  const sourceAccount = await SigningAccount.fromWallet(queryParameters.accountId);
-  if(await SigningAccount.canSign(sourceAccount))
-    await sourceAccount.deriveKeys(sourceAccountSecret, {asymetric: 'Asymetric', signing: 'Signing', shareKX: 'ShareKX'})
-                       .catch(err => console.error(`Error deriving keys for SigningAccount ${sA.account.id}`, err));
+if(!Object.keys(queryParameters).length && segments.length === 2)
+  throw new Error(`could not parse urlencoded parameters from entries `, entries)
 
+// create a SigningAccount, with keys if user agrees to sign
+// a transaction signature is used as the key seed
+const sourceAccount = await SigningAccount.checkForWallet(queryParameters?.accountId, sourceAccountSecret);
+await sourceAccount.ready;
+if(sourceAccount.canSign)
+  addOption('accountId', sourceAccount.id);
+if(queryParameters?.accountId && queryParameters.accountId !== sourceAccount.id)
+  addOption('accountId', queryParameters.accountId, true);
 
-function addOption(elId, value, selected=false){
+/*const sourceAccount = await SigningAccount.fromWallet(queryParameters.accountId);
+if(await SigningAccount.canSign(sourceAccount) )
+  await sourceAccount.deriveKeys(sourceAccountSecret, {asymetric: 'Asymetric', signing: 'Signing', shareKX: 'ShareKX'})
+                     .catch(err => console.error(`Error deriving keys for SigningAccount ${sA.account.id}`, err));
+*/
+
+function addOption(elId, value, selected=false, label=true){
   const option = document.createElement('option');
-  option.label = option.value = value;
+  option.label = label && value.length > 2*7+3 ? `${value.slice(0,7)}...${value.slice(-7)}` : value;
+  option.value = value;
   option.selected = selected;
   document.getElementById(elId).appendChild(option);
 }
 
-function BlockParameters(accountId){
+function addOptions(elId, values, selected=false, label=true){
+  document.getElementById(elId).innerHTML = '';
+  for(const value of values){
+    addOption(elId, value, selected, label)
+  }
+}
+
+function BlockParameters(queryParameters){
   this.source = {
-      init: function(){
-console.log(`initializing this.source `, this);
+      init: function(queryParameters, blockParameters){
+//console.log(`initializing this.source `, this);
         this.el.addEventListener('change', function(e){
-console.log(`executing address selector change on this  `, this);
-          const addressInput = document.getElementById('addressInput');
-          const address = document.getElementById('address');
-          if(e.target.value === 'ipfs'){
-            CKE5_Page.source.url = (cid) => `https://motia.infura-ipfs.io/ipfs/${cid.toString()}`;
-            addressInput.hidden = false;
-            address.hidden = true;
+          if(blockParameters.source.value === 'localStorage'){
+            addOptions('addresses', Object.keys(localStorage), false, false);          
           }
-          else { // else we assume it's localStorage
-            CKE5_Page.source.url = false;
-            addressInput.hidden = true;
-            address.hidden = false;
-            address.innerHTML = '';
-            for(const key of Object.keys(localStorage))
-              addOption('address', key);
-            address.dispatchEvent(new Event('change'));
-          }
-          console.log(`have set source url to: `, CKE5_Page.source);
-        }.bind(this));
+        })
       }
     };
   this.inKeys = {
       init: function(){
         this.el.addEventListener('change', e => {
           document.getElementById('addFrom').hidden =  e.target.value !== 'add';
-          document.getElementById('address').dispatchEvent(new Event('change'));
+          document.getElementById('addressInput').dispatchEvent(new Event('change'));
         });
         document.getElementById('addFrom').addEventListener('change', e => addOption('inKeys', e.target.value));
       }
     };
-  this.address = {
-      init: function(){
-        if(document.getElementById('source').value === 'localStorage')
-          for(const key of Object.keys(localStorage))
-            addOption('address', key);
-        for(const el of document.getElementsByClassName('addressInputs'))
-          el.addEventListener('change', e => CKE5_Page.openPage(sourceAccount, e.target.value));
+  this.addressInput = {
+      init: function(queryParameters, blockParameters){
+        this.el.addEventListener('change', e => CKE5_Page.openPage(sourceAccount, e.target.value));
+        // dispatching the event below fills our the initial datalist fir addressInput
+        blockParameters.source.el.dispatchEvent(new Event('change'));
       }
     };
   this.sink = {
@@ -104,6 +105,54 @@ console.log(`executing address selector change on this  `, this);
         });
       }
     };
+  this.accountId = {
+    init: async function(){
+      this.el.addEventListener('change', async function(e){
+        const account = await SigningAccount.load(e.target.value);
+        document.getElementById('dataEntries').innerHTML = '';
+        for(const key of Object.keys(account.data))
+          addOption('dataEntries', key, false, false);      
+      });
+    }
+  };
+  this.dataEntryLabel = {
+    init: function(queryParameters, blockParameters){
+      if(queryParameters?.dataEntryLabel)
+        this.el.value = queryParameters.dataEntryLabel;
+      else
+        this.el.placeholder = `name of hash`;
+      this.el.addEventListener('change', async function(e){
+        const hash = await SigningAccount.dataEntry(blockParameters.accountId.value, e.target.value);
+        console.log(`read hash ${hash} from account ${blockParameters.accountId.value} label ${e.target.value}`);
+        blockParameters.addressInput.el.value = hash;
+        blockParameters.addressInput.el.dispatchEvent(new Event('change'));
+      });
+    }
+  };
+  this.nameIt = {
+    init: function(queryParameters, blockParameters){
+      this.el.addEventListener('change', async function(e){
+        Array.from(document.getElementsByClassName('hashName')).map(function(el){
+          el.hidden = !parseInt(e.target.value);
+        })
+        if(!!parseInt(e.target.value))
+          blockParameters.accountId.el.dispatchEvent(new Event('change'));
+        console.log(`blockParameters is `, blockParameters);
+      });
+      Object.defineProperty(this, 'value', {
+        get: function(){
+          return !!parseInt(this.el.value)
+        }
+      });
+    }
+  };
+  Object.defineProperty(this, 'persistAll', {
+    get: function(){
+      console.log(`persist all of this? `, this);
+      const {source, inKeys, sink, outKeys} = this;
+      return sink.value !== source.value || inKeys.value !== outKeys.value
+    }
+  });
 
   for(const key of Object.keys(this)){
     this[key].el = document.getElementById(key);
@@ -114,9 +163,9 @@ console.log(`executing address selector change on this  `, this);
         return this.el.value
       },
       configurable: true,
-      enumerable: true,
+      enumerable: false,
     });
-    this[key].init();
+    this[key].init(queryParameters, this);
 console.log(`initialized ${key}`);
   }
 }
@@ -316,10 +365,8 @@ console.log(`calling replaceWith() on element id ${elId}`);
     });
 
     node.elements.rmAddress.addEventListener('change', e => {
-      const addressSelect = this.blockParameters.address.el;
-      Array.from(addressSelect.children).filter(child => child.value === e.target.value).map(child => child.remove());
-      //el.innerHTML = Array.from(el.children).filter(child => child.value !== e.target.value);
-      addressSelect.dispatchEvent(new Event('change'));
+      Array.from(document.getElementById('addresses')).filter(child => child.value === e.target.value).map(child => child.remove());
+      CKE5_Page.blockParameters.addressInput.dispatchEvent(new Event('change'));
       this.rm(e.target.value)
     });
 
@@ -359,23 +406,27 @@ console.log(`filtered ${nameInputs.length} name input elments: `, nameInputs);
     const keys = await this.signingAccount.keys.writeTo('self');
 console.log(`encrypting for self with keys `, keys);
     return this.update(value, keys).then(async root => {
-      this.#root = root.cid;
+      this.#root = root;
       document.getElementById('homeButton').value = this.#root.toString();
+      document.getElementById('editingRoot').value = root.cid.toString();
+      document.getElementById('editingPage').value = this.cid.toString();
       if(this.parents.length)
         // this needs to take into account when there are more than one parent.
         document.getElementById('upButton').value = this.parents[0].cid.toString();
-      //if(SigningAccount.canSign(root.signingAccount))
-        //Encrypted_Node.persist(root.signingAccount,qP.label, root.cid, keys);
-      document.getElementById('editingRoot').value = root.cid.toString();
-      document.getElementById('editingPage').value = this.cid.toString();
-      CKE5_Page.mapPages(root, await this.signingAccount.keys.readFrom('self'), this.cid.toString());
+      CKE5_Page.persist(root, keys);
+      CKE5_Page.mapPages(
+        root, await this.signingAccount.keys.readFrom('self'), 
+        this.cid.toString()
+      );
     })
   }
 }
 
 /* Now start the program running
  */
-CKE5_Page.blockParameters = new BlockParameters();
-CKE5_Page.blockParameters.address.el.dispatchEvent(new Event('change'))
+
+CKE5_Page.blockParameters = new BlockParameters(queryParameters);
+//CKE5_Page.blockParameters.addressInput.el.value = document.getElementById('addresses').children[0].value;
+//CKE5_Page.blockParameters.addressInput.el.dispatchEvent(new Event('change'))
 
 //CKE5_Page.publishPlaintext(window.collab, keys, 'tssDoc');
