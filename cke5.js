@@ -125,7 +125,7 @@ function BlockParameters(queryParameters){
         const hash = await SigningAccount.dataEntry(blockParameters.accountId.value, e.target.value);
         console.log(`read hash ${hash} from account ${blockParameters.accountId.value} label ${e.target.value}`);
         blockParameters.addressInput.el.value = hash;
-        blockParameters.addressInput.el.dispatchEvent(new Event('change'));
+        //blockParameters.addressInput.el.dispatchEvent(new Event('change'));
       });
     }
   };
@@ -144,6 +144,13 @@ function BlockParameters(queryParameters){
           return !!parseInt(this.el.value)
         }
       });
+    }
+  };
+  this.readIt = {
+    init: function(queryParameters, blockParameters){
+      this.el.addEventListener('click', function(e){
+        blockParameters.addressInput.el.dispatchEvent(new Event('change'))
+      })
     }
   };
   Object.defineProperty(this, 'persistAll', {
