@@ -40,21 +40,21 @@ function addOption(elId, value, selected=false, label=true){
   document.getElementById(elId).appendChild(option);
 }
 
-function addOptions(elId, values, selected=false, label=true){
-  document.getElementById(elId).innerHTML = '';
-  for(const value of values){
-    addOption(elId, value, selected, label)
-  }
-}
-
 function BlockParameters(queryParameters){
   this.source = {
       init: function(queryParameters, blockParameters){
-//console.log(`initializing this.source `, this);
         this.el.addEventListener('change', function(e){
-          if(blockParameters.source.value === 'localStorage'){
-            addOptions('addresses', Object.keys(localStorage), false, false);          
+          console.log(`have set source to ${e.target.value}`);
+          document.getElementById('addresses').innerHTML = '';
+          if(e.target.value === 'localStorage'){
+            for(const key of Object.keys(localStorage))
+              addOption('addresses', key, false, false);
+            CKE5_Page.source.url = false;          
           }
+          else if(e.target.value === 'ipfs')
+            CKE5_Page.source.url = (cid) => `https://motia.infura-ipfs.io/ipfs/${cid.toString()}/`;
+          else
+            console.error(`oops, didn't expect to be here`);
         })
       }
     };
@@ -69,8 +69,7 @@ function BlockParameters(queryParameters){
     };
   this.addressInput = {
       init: function(queryParameters, blockParameters){
-        this.el.addEventListener('change', e => CKE5_Page.openPage(sourceAccount, e.target.value));
-        // dispatching the event below fills our the initial datalist fir addressInput
+        this.el.addEventListener('change', () => blockParameters.dataEntryLabel.el.value = '');
         blockParameters.source.el.dispatchEvent(new Event('change'));
       }
     };
@@ -96,8 +95,6 @@ function BlockParameters(queryParameters){
     };
   this.traverse = {
       init: function(){
-        //delete this.value;
-        // this below is the BlockParameters instance's traverse object
         Object.defineProperty(this, 'value', {
           get: function(){
             return !!parseInt(this.el.value)
@@ -119,13 +116,11 @@ function BlockParameters(queryParameters){
     init: function(queryParameters, blockParameters){
       if(queryParameters?.dataEntryLabel)
         this.el.value = queryParameters.dataEntryLabel;
-      else
-        this.el.placeholder = `name of hash`;
+      this.el.placeholder = `name of hash`;
       this.el.addEventListener('change', async function(e){
         const hash = await SigningAccount.dataEntry(blockParameters.accountId.value, e.target.value);
         console.log(`read hash ${hash} from account ${blockParameters.accountId.value} label ${e.target.value}`);
         blockParameters.addressInput.el.value = hash;
-        //blockParameters.addressInput.el.dispatchEvent(new Event('change'));
       });
     }
   };
@@ -149,7 +144,9 @@ function BlockParameters(queryParameters){
   this.readIt = {
     init: function(queryParameters, blockParameters){
       this.el.addEventListener('click', function(e){
-        blockParameters.addressInput.el.dispatchEvent(new Event('change'))
+        CKE5_Page.openPage(sourceAccount, blockParameters.addressInput.value);
+        //blockParameters.dataEntryLabel.el.value = '';
+        //blockParameters.addressInput.el.value = '';
       })
     }
   };
