@@ -1,5 +1,6 @@
 import {Encrypted_Node, SigningAccount} from '@brianebert/tss';
 import {CK_Watchdog} from './editor.js';
+import { CID } from 'multiformats/cid'
 
 // just in case you find a good way to pass this in
 const sourceAccountSecret = null;
@@ -177,16 +178,44 @@ console.log(`initialized ${key}`);
 class CKE5_Page extends Encrypted_Node {
   #root;
   constructor(){
-console.log(`creating CKE5_Page from arguments: `, ...arguments);
     super(...arguments);
     this.#root = this.cid;
 
     // below are elements that need listeners stripped when changing pages
     this.elIds = ['editingPage', 'editingRoot', 'pageName', 'pageSelect', 'editSelect',
                   'upButton', 'rmAddress', 'unlinkName', 'linkAddress', 'editButton',
-                  'linkName']; // edit instances of rmSelect 
+                  'linkName', 'newName']; // edit instances of rmSelect 
     // element editor uses
     this.editorEl = document.querySelector('.editor');
+    this.pageLinks = {
+      links: {},
+      onclick: e => CKE5_Page.openPage(this.signingAccount, e.target.value),
+      push: function(key, value){
+        this.links[key] = value;
+      },
+      renderBeneath: function(parentEl){
+        parentEl.innerHTML = '';
+        for(const [key, value] of Object.entries(this.links)){
+          const button = document.createElement('button');
+          button.addEventListener('click', this.onclick);
+          button.id = `${key}SubpageButton`;
+          button.value = value.toString();
+          button.textContent = key;
+          parentEl.appendChild(button);
+        }
+      },
+      rm(key){
+        document.getElementById(`${key}SubpageButton`).remove();
+        this.links[key] = undefined;
+      },
+      update: function(values){
+        for(const [key, value] of Object.entries(this.links))
+          if(value !== undefined)
+            values[key] = value;
+          else
+            delete values[key];
+      }
+    };
   }
 
   get root(){
@@ -279,10 +308,8 @@ console.log(`creating page select option ${page.name}, value ${page.cid.toString
     const editor = window.watchdog.editor;
     const pageSelectLabel = bool ? 'Reading Page: ' : 'Editing Page: ';
     bool ? editor.enableReadOnlyMode(this.lockId) : editor.disableReadOnlyMode(this.lockId);
-
     Array.from(document.getElementsByClassName('pageControls')).forEach(el => el.hidden = true);
     document.getElementById('editSelect').hidden = bool
-
     document.getElementById('pageSelectLabel').textContent = pageSelectLabel;
     document.getElementById('saveButton').disabled = bool;
     document.getElementById('editButton').hidden = !bool;
@@ -326,20 +353,12 @@ console.log(`calling replaceWith() on element id ${elId}`);
     }
 
     const subpagesEl = document.getElementById('subPages');
-    subpagesEl.innerHTML = '';
-    //node.elements['rmSelect'].innerHTML = `<option>choose from</option>`;
-    const linkKeys = Object.keys(node.links);
-    if(linkKeys.length)
-      for(const key of linkKeys)
-        if(!key.endsWith('_last')){
-          const button = document.createElement('button');
-          button.value = node.links[key].toString();
-          button.textContent = key; 
-          button.type = 'button'; 
-          //const [button, option] = this.pageLinkingElements(key, node.links[key].toString());
-          //node.elements['rmSelect'].appendChild(option);
-          subpagesEl.appendChild(button);
-        }
+    for(const [key, value] of Object.entries(node.links))
+      if(!key.endsWith('_last'))
+        node.pageLinks.push(key, value);
+    node.pageLinks.renderBeneath(subpagesEl);
+
+
 
     node.elements.editButton.addEventListener('click', e => {
       console.log(`clicked editButton`);
@@ -363,24 +382,56 @@ console.log(`calling replaceWith() on element id ${elId}`);
     })
 
     node.elements.pageName.addEventListener('change', async e => {
-      const page = await this.openPage(node.signingAccount, null, e.target.value);
-      await this.mapPages(page) // keys, selectValue not needed since only will create the one option
-      document.getElementById('newPage').hidden = true
+      if(e.target.value.length > 0){
+        const page = await this.openPage(node.signingAccount, null, e.target.value);
+        await this.mapPages(page) // keys, selectValue not needed since only will create the one option
+        document.getElementById('newPage').hidden = true
+      }
     });
+
+    function linkPage(node){
+      const nameEl = node.elements.linkName;
+      const addressEl = node.elements.linkAddress;
+
+      return (e) => {
+        const name = nameEl.value;
+        const address = addressEl.value;
+        if(address.length > 0 && name.length > 0 && !Object.hasOwn(node.pageLinks.links, name))
+          try {
+            const cid = CID.parse(address);
+            node.pageLinks.push(name, cid);
+            node.pageLinks.renderBeneath(subpagesEl);
+          } catch (err) {
+            console.error(`caught error linking pages ${node.cid.toString()} and ${address} with name ${name}`, err);
+          }
+      }
+    }
+
+    node.elements.linkName.addEventListener('change', linkPage(node));
+    node.elements.linkAddress.addEventListener('change', linkPage(node));
+
+    node.elements.unlinkName.addEventListener('change', e => {
+      if(e.target.value in node.pageLinks.links)
+        node.pageLinks.rm(e.target.value);
+    })
 
     node.elements.rmAddress.addEventListener('change', e => {
       Array.from(document.getElementById('addresses')).filter(child => child.value === e.target.value).map(child => child.remove());
       CKE5_Page.blockParameters.addressInput.dispatchEvent(new Event('change'));
-      this.rm(e.target.value)
+      this.rm(e.target.value);
     });
 
-    const nameInputs = Object.keys(node.elements).filter(key => key.endsWith('Name'));
+    node.elements.newName.addEventListener('change', e => {
+      if(e.target.value.length > 0 && e.target.value !== node.name)
+        this.startAutosave();
+    });
+
+    const nameInputs = Array.from(document.getElementsByClassName('nameInput'));
 console.log(`filtered ${nameInputs.length} name input elments: `, nameInputs);
-    for(const input of nameInputs){
-      const el = node.elements[input];
+    for(const el of nameInputs){
       el.addEventListener('keydown', e => el.size++);
       el.addEventListener('keyup', e => {
-        el.size = el.value.length ? el.value.length : 1;
+        el.size = el.value.length ? el.value.length : 4;
         e.target.setCustomValidity('');
         if(!e.target.reportValidity())
           e.target.setCustomValidity(`name cannot be ${e.target.value}`);
@@ -402,10 +453,19 @@ console.log(`filtered ${nameInputs.length} name input elments: `, nameInputs);
     window.scroll(0,0);
   }
 
+  static startAutosave(){
+    // Any comment will trigger CKEditor5 autosave and is stripped too!
+    window.watchdog.editor.setData('<!-- -->' + window.watchdog.editor.getData())
+  }
+
   // do not call directly. It will be called by the Editor's autosave module.
   async saveData(editor){
     console.log(`saving data for this: `, this);
     const value = Object.assign({}, this.value);
+    const newColName = document.getElementById('newName').value
+    if(newColName.length > 0)
+      value.colName = newColName;
+    this.pageLinks.update(value);
     value.editorContents = editor.getData();
     const keys = await this.signingAccount.keys.writeTo('self');
 console.log(`encrypting for self with keys `, keys);
