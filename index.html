@@ -32,8 +32,8 @@
 	</head>
 	<body style="margin:0;padding:0% 5%;" data-editor="ClassicEditor" data-collaboration="false" data-revision-history="false">
 		<div id="topBar" style="font-size: 0.75em; background-color: #f2f2f3; padding: 0 2em;
-								border-color: #ccced1; border-radius: 2px; border-width: 1px; border-style: solid;
-								left: 5%;right: 5%;">
+						border-color: #ccced1; border-radius: 2px; border-width: 1px; border-style: solid;
+						left: 5%;right: 5%;">
 			<div>
 				<span>
 					<button id="readIt">read</button>
@@ -124,9 +124,9 @@
 			Below controls navigation between pages of a document being read or edited.
 			Pages are stored on IPFS, linked and encrypted with tss
 		-->
-		<div style="font-size: 0.75em; background-color: #f2f2f3; padding: 0 2em;
-								border-color: #ccced1; border-radius: 2px; border-width: 1px; border-style: solid;
-								position: sticky; z-index: 100; bottom: 0;left: 5%;right: 5%;">
+		<div id="bottomBar" style="font-size: 0.75em; background-color: #f2f2f3; padding: 0 2em;
+				 border-color: #ccced1; border-radius: 2px; border-width: 1px; border-style: solid;
+				 position: sticky; z-index: 100; bottom: 0;left: 5%;right: 5%;">
 			<div id="theForm">
 				<div style="padding: 0.5em 0 0.25em">
 					<span>
@@ -137,7 +137,7 @@
 						<output id="editingPage"></output>
 					</span>
 					<span style="float: right;">
-						<label for="editingRoot">Document Address </label>
+						<label for="editingRoot">Document Root </label>
 						<output id="editingRoot"/></output>
 					</span>
 				</div>
@@ -154,7 +154,7 @@
 						<span>
 							<button id="editButton" type="button">Edit Document</button>
 						</span>
-						<span class="pageControls" hidden>
+						<span hidden>
 							<select id="editSelect">
 								<option value="" selected>Select From</option>
 								<option value="newPage">New:</option>
@@ -200,4 +200,3 @@
 		<script src="./client.js"></script>
 	</body>
 </html>
-"linkName", "linkAddress", "unlinkName", "rmAddress", "newName"
