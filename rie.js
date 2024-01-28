@@ -148,7 +148,7 @@ function BlockParameters(queryParameters){
     }
   };
   Object.defineProperty(this, 'persistAll', {
-    get: function(){
+    get: () => {
       console.log(`persist all of this? `, this);
       const {source, inKeys, sink, outKeys} = this;
       return sink.value !== source.value || inKeys.value !== outKeys.value
@@ -162,6 +162,9 @@ function BlockParameters(queryParameters){
     Object.defineProperty(this[key], 'value', {
       get: function(){
         return this.el.value
+      },
+      set: function(value){
+        return this.el.value = value
       },
       configurable: true,
       enumerable: false,
