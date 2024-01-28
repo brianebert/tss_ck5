@@ -20,7 +20,7 @@ module.exports = {
   },
   mode: 'development',
   entry: {
-  	client: './cke5.js',
+  	client: './rie.js',
   },/*
   optimization: {
     minimize: true,

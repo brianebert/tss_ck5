@@ -2,214 +2,34 @@ import {Encrypted_Node, SigningAccount} from '@brianebert/tss';
 import {CK_Watchdog} from './editor.js';
 import { CID } from 'multiformats/cid'
 
-// just in case you find a good way to pass this in
-const sourceAccountSecret = null;
-
-  // Parse the url for Stellar account number and data entry name where document's ipfs address is saved
-let queryParameters = {}; let entries = [];
-const segments = window.location.href.split('?');
-if(segments.length === 2)
-  entries = segments.pop().split('&').map(pair => pair.split('='));
-// check you've parsed key=value pairs
-if(entries.reduce((acc, entry) => acc && (entry.length === 2), true))
-  // then make Object from them
-  queryParameters = Object.fromEntries(entries);
-
-if(!Object.keys(queryParameters).length && segments.length === 2)
-  throw new Error(`could not parse urlencoded parameters from entries `, entries)
-
-// create a SigningAccount, with keys if user agrees to sign
-// a transaction signature is used as the key seed
-const sourceAccount = await SigningAccount.checkForWallet(queryParameters?.accountId, sourceAccountSecret);
-await sourceAccount.ready;
-if(sourceAccount.canSign)
-  addOption('accountId', sourceAccount.id);
-if(queryParameters?.accountId && queryParameters.accountId !== sourceAccount.id)
-  addOption('accountId', queryParameters.accountId, true);
-
-/*const sourceAccount = await SigningAccount.fromWallet(queryParameters.accountId);
-if(await SigningAccount.canSign(sourceAccount) )
-  await sourceAccount.deriveKeys(sourceAccountSecret, {asymetric: 'Asymetric', signing: 'Signing', shareKX: 'ShareKX'})
-                     .catch(err => console.error(`Error deriving keys for SigningAccount ${sA.account.id}`, err));
-*/
-
-function addOption(elId, value, selected=false, label=true){
-  const option = document.createElement('option');
-  option.label = label && value.length > 2*7+3 ? `${value.slice(0,7)}...${value.slice(-7)}` : value;
-  option.value = value;
-  option.selected = selected;
-  document.getElementById(elId).appendChild(option);
-}
-
-function BlockParameters(queryParameters){
-  this.source = {
-      init: function(queryParameters, blockParameters){
-        this.el.addEventListener('change', function(e){
-          console.log(`have set source to ${e.target.value}`);
-          document.getElementById('addresses').innerHTML = '';
-          if(e.target.value === 'localStorage'){
-            for(const key of Object.keys(localStorage))
-              addOption('addresses', key, false, false);
-            CKE5_Page.source.url = false;          
-          }
-          else if(e.target.value === 'ipfs')
-            CKE5_Page.source.url = (cid) => `https://motia.infura-ipfs.io/ipfs/${cid.toString()}/`;
-          else
-            console.error(`oops, didn't expect to be here`);
-        })
-      }
-    };
-  this.inKeys = {
-      init: function(){
-        this.el.addEventListener('change', e => {
-          document.getElementById('addFrom').hidden =  e.target.value !== 'add';
-          document.getElementById('addressInput').dispatchEvent(new Event('change'));
-        });
-        document.getElementById('addFrom').addEventListener('change', e => addOption('inKeys', e.target.value));
-      }
-    };
-  this.addressInput = {
-      init: function(queryParameters, blockParameters){
-        this.el.addEventListener('change', () => blockParameters.dataEntryLabel.el.value = '');
-        blockParameters.source.el.dispatchEvent(new Event('change'));
-      }
-    };
-  this.sink = {
-      init: function(){
-        this.el.addEventListener('change', function(e){
-          if(e.target.value === 'ipfs')
-            CKE5_Page.sink.url = (cid) => typeof cid === 'string' ? `https://motia.com/api/v1/ipfs/pin/add?arg=${cid}` :
-                       `          https://motia.com/api/v1/ipfs/block/put?cid-codec=${CKE5_Page.codecForCID(cid).name}`;
-           else
-            CKE5_Page.sink.url = false;
-          console.log(`have set sink url to: `, CKE5_Page.sink.url);
-        })
-      }
-    };
-  this.outKeys = {
-      init: function(){
-        this.el.addEventListener('change', e => {
-          document.getElementById('addTo').hidden = e.target.value !== 'add';
-        });
-        document.getElementById('addTo').addEventListener('change', e => addOption('outKeys', e.target.value));
-      }
-    };
-  this.traverse = {
-      init: function(){
-        Object.defineProperty(this, 'value', {
-          get: function(){
-            return !!parseInt(this.el.value)
-          }
-        });
-      }
-    };
-  this.accountId = {
-    init: async function(){
-      this.el.addEventListener('change', async function(e){
-        const account = await SigningAccount.load(e.target.value);
-        document.getElementById('dataEntries').innerHTML = '';
-        for(const key of Object.keys(account.data))
-          addOption('dataEntries', key, false, false);      
-      });
-    }
-  };
-  this.dataEntryLabel = {
-    init: function(queryParameters, blockParameters){
-      if(queryParameters?.dataEntryLabel)
-        this.el.value = queryParameters.dataEntryLabel;
-      this.el.placeholder = `name of hash`;
-      this.el.addEventListener('change', async function(e){
-        const hash = await SigningAccount.dataEntry(blockParameters.accountId.value, e.target.value);
-        console.log(`read hash ${hash} from account ${blockParameters.accountId.value} label ${e.target.value}`);
-        blockParameters.addressInput.el.value = hash;
-      });
-    }
-  };
-  this.nameIt = {
-    init: function(queryParameters, blockParameters){
-      this.el.addEventListener('change', async function(e){
-        Array.from(document.getElementsByClassName('hashName')).map(function(el){
-          el.hidden = !parseInt(e.target.value);
-        })
-        if(!!parseInt(e.target.value))
-          blockParameters.accountId.el.dispatchEvent(new Event('change'));
-        console.log(`blockParameters is `, blockParameters);
-      });
-      Object.defineProperty(this, 'value', {
-        get: function(){
-          return !!parseInt(this.el.value)
-        }
-      });
-    }
-  };
-  this.readIt = {
-    init: function(queryParameters, blockParameters){
-      this.el.addEventListener('click', function(e){
-        CKE5_Page.openPage(sourceAccount, blockParameters.addressInput.value);
-        //blockParameters.dataEntryLabel.el.value = '';
-        //blockParameters.addressInput.el.value = '';
-      })
-    }
-  };
-  Object.defineProperty(this, 'persistAll', {
-    get: function(){
-      console.log(`persist all of this? `, this);
-      const {source, inKeys, sink, outKeys} = this;
-      return sink.value !== source.value || inKeys.value !== outKeys.value
-    }
-  });
-
-  for(const key of Object.keys(this)){
-    this[key].el = document.getElementById(key);
-    if(Object.hasOwn(queryParameters, key))
-      Array.from(this[key].el.children).map(child => child.selected = queryParameters[key] === child.value);
-    Object.defineProperty(this[key], 'value', {
-      get: function(){
-        return this.el.value
-      },
-      configurable: true,
-      enumerable: false,
-    });
-    this[key].init(queryParameters, this);
-console.log(`initialized ${key}`);
-  }
-}
 
 function PageControls(node){
-  Object.defineProperty(this, 'node', {
-    value: node,
-    configurable: false,
-    enumerable: false,
-  });
-  function tryToLink(name, address){
-    try {
-      const cid = CID.parse(address);
-      this.node.pageLinks.push(name, cid);
-      this.node.pageLinks.renderBeneath(document.getElementById('subPages'));
-    } catch (err) {
-      console.error(`caught error linking pages ${this.node.cid.toString()} and ${address} with name ${name}`, err);
-    }
-  }
+  const outerContext = this;
   this.saveButton = {
-    listener: {
-      type: 'click',
-      fn: async e => {
+    reset: function(){
+      this.el.addEventListener('click', async e => {
         const autoSave = window.watchdog.editor.plugins.get('Autosave');
         console.log(`autoSave is: `, autoSave);
         if(autoSave.state === 'waiting')
           await autoSave.save(window.watchdog.editor);
         CKE5_Page.readOnlyMode(true);
-      }
+      })
     }
   };
   this.editingPage = {
     reset: function(node){
-      this.el.value = node.cid.toString();
+      if(Object.hasOwn(node.value, 'editorContents'))
+        this.el.value = node.cid.toString();
+      else
+        this.el.value = '';
     }
   };
   this.editingRoot = {
     reset: function(node){
-      this.el.value = node.cid.toString();
+      if(Object.hasOwn(node.value, 'editorContents'))
+        this.el.value = node.cid.toString();
+      else
+        this.el.value = '';
     }
   };
   this.oldName = {
@@ -223,118 +43,112 @@ function PageControls(node){
     }
   };
   this.pageSelect = {
-    listener: {
-      type: 'change',
-      fn: e => CKE5_Page.openPage(node.signingAccount, e.target.value)
+    reset: function(node){
+      const pages = this.el.children;
+      if(pages.length > 0)
+        for(const page of Array.from(pages))
+          page.selected = page.value === node.cid.toString();
+      this.el.addEventListener('change', e => CKE5_Page.openPage(node.signingAccount, e.target.value))
     }
   };
   this.homeButton = {
     reset: function(node){
       this.el.value = node.cid.toString();
-    }
-    listener: {
-      type: 'click',
-      fn: e => CKE5_Page.openPage(node.signingAccount, e.target.value)
+      this.el.disabled = !node.parents.length;
+      this.el.addEventListener('click', e => CKE5_Page.openPage(node.signingAccount, e.target.value))
     }
   };
   this.upButton = {
     reset: function(node){
-      if(node.parents.length > 0)
+      if(node.parents.length > 0){
         this.el.value = node.parents[0].cid.toString();
-    }
-    listener: {
-      type: 'click',
-      fn: e => CKE5_Page.openPage(node.signingAccount, e.target.value)
+        this.el.disabled = !node.parents.length;
+        this.el.addEventListener('click', e => CKE5_Page.openPage(node.signingAccount, e.target.value))
+      }
     }
   };
   this.editButton = {
-    listener: {
-      type: 'click',
-      fn: e => CKE5_Page.readOnlyMode(false)
+    reset: function(node){
+      this.el.addEventListener('click', e => CKE5_Page.readOnlyMode(false))
     }
   };
   this.editSelect = {
-    listener: {
-      type: 'change',
-      fn: e => 
-        Array.from(document.getElementsByClassName('pageControls'))
-             .map(el => el.hidden = el.id !== e.target.value)
+    reset: function(){
+      this.el.addEventListener('change', e => 
+        Array.from(document.getElementsByClassName('documentEdits'))
+             .map(el => el.hidden = el.id !== e.target.value))
     }    
   };
   this.pageName = {
     reset: function(){
       this.el.value = '';
-    },
-    listener: {
-      type: 'change',
-      fn: async e => {
+      this.el.addEventListener('change', async e => {
         if(e.target.value.length > 0){
           const page = await CKE5_Page.openPage(node.signingAccount, null, e.target.value);
           await this.mapPages(page) // keys, selectValue not needed since only will create the one option
           //document.getElementById('newPage').hidden = true
         }
-      }
+      })
     }
   };
   this.linkName = {
-    reset: function(){
+    reset: function(node){
       this.el.value = '';
-    },
-    listener: {
-      type: 'change',
-      fn: e => {
+      this.el.addEventListener('change', e => {
         if(e.target.value.length > 0 && this.linkAddress.value.length > 0)
-          tryToLink(e.target.value, this.linkAddress.value)
-      }
+          tryToLink(node, e.target.value, this.linkAddress.value)
+      })
     }
   };
   this.linkAddress = {
-    reset: function(){
+    reset: function(node){
       this.el.value = '';
-    },
-    listener: {
-      type: 'change',
-      fn: e => {
+      this.el.addEventListener('change', e => {
         if(e.target.value.length > 0 && this.linkName.value.length > 0)
-          tryToLink(this.linkName.value, e.target.value)
-      }
+          tryToLink(node, this.linkName.value, e.target.value)
+      })
     }
   };
   this.unlinkName = {
-    reset: function(){
+    reset: function(node){
       this.el.value = '';
-    },
-    listener: {
-      type: 'change',
-      fn: e => {
+      this.el.addEventListener('change', e => {
         if(e.target.value.length > 0 )
           node.pageLinks.rm(e.target.value);
-      }
-    }   
+      })
+    }  
   };
   this.rmAddress = {
     reset: function(){
       this.el.value = '';
-    },
-    listener: {
-      type: 'change',
-        fn: e => {
+      this.el.addEventListener('change', e => {
         Array.from(document.getElementById('addresses')).filter(child => child.value === e.target.value).map(child => child.remove());
-        // ?? CKE5_Page.blockParameters.addressInput.dispatchEvent(new Event('change'));
+        // ?? CKE5_Page.topBar.addressInput.dispatchEvent(new Event('change'));
         CKE5_Page.rm(e.target.value);
-      }
+      })
     }
   };
+  // tryToLink is called by linkName and linkAddress change handlers
+  function tryToLink(page, name, address){
+    try {
+      const cid = CID.parse(address);
+      page.pageLinks.push(name, cid);
+      page.pageLinks.render();
+    } catch (err) {
+      console.error(`caught error linking pages ${page.cid.toString()} and ${address} with name ${name}`, err);
+    }
+  }
   Object.defineProperty(this, 'reset', {
-    value: function(){
-      for(const [key, value] of Object.entries(this)){
-        if(Object.hasOwn(value, 'listener')){
-          value.el.replaceWith(value.el.cloneNode(true));
-          value.el.addEventListener(value.listener.type, value.listener.fn);
-        }
-        if(Object.hasOwn(value, 'reset'))
-          value.reset(this.node);
-      }
+    value: function(node){
+      const textInputs = [...document.getElementsByClassName('nameInput'),...document.getElementsByClassName('addressInput')];
+      for(const [key, value] of Object.entries(this))
+        value.reset(node);
+      textInputs.map(input => input.addEventListener('keyup', e => {
+        el.size = 4 + el.value.length;;
+        e.target.setCustomValidity('');
+        if(!e.target.reportValidity())
+          e.target.setCustomValidity(`name cannot be ${e.target.value}`);
+      }))
       return this
     },
     configurable: false,
@@ -355,18 +169,14 @@ console.log(`constructing PageControls with keys `, Object.keys(this));
     });
 console.log(`initialized ${key}`);
   }
+  this.reset(node);
 }
 
 class CKE5_Page extends Encrypted_Node {
-  #root; #pageControls;
+  #root; #bottomBar;
   constructor(){
     super(...arguments);
     this.#root = this.cid;
-
-    // below are elements that need listeners stripped when changing pages
-    this.elIds = ['editingPage', 'editingRoot', 'pageName', 'pageSelect', 'editSelect',
-                  'upButton', 'rmAddress', 'unlinkName', 'linkAddress', 'editButton',
-                  'linkName', 'oldName', 'newName']; // edit instances of rmSelect 
     // element editor uses
     this.editorEl = document.querySelector('.editor');
     this.pageLinks = {
@@ -377,7 +187,8 @@ class CKE5_Page extends Encrypted_Node {
           throw new Error(`cannot set new link from ${key} or to ${value}`)
         this.links[key] = value;
       },
-      renderBeneath: function(parentEl){
+      render: function(){
+        const parentEl = document.getElementById('subPages');
         parentEl.innerHTML = '';
         for(const [key, value] of Object.entries(this.links)){
           const button = document.createElement('button');
@@ -408,7 +219,11 @@ class CKE5_Page extends Encrypted_Node {
     return this.#root
   }
 
-  static blockParameters;
+  get bottomBar(){
+    return this.#bottomBar
+  }
+
+  static topBar;
 
   static async mapPages(root, keys, selectValue){
 console.log(`populating page selector for ${root.name} with ${selectValue} selected.`);
@@ -430,7 +245,7 @@ console.log(`creating page select option ${page.name}, value ${page.cid.toString
       opts.unshift(pageOption);
       return Promise.resolve();
     }
-    if(CKE5_Page.blockParameters.traverse.value){
+    if(CKE5_Page.topBar.traverse.value){
       await this.traverse(root.cid, populateSelectOption, keys);
       subPageLinks.map(link => link.disabled = false);
     }
@@ -453,7 +268,7 @@ console.log(`creating page select option ${page.name}, value ${page.cid.toString
       }
     }
     // make keys
-    switch(this.blockParameters.inKeys.value){
+    switch(this.topBar.inKeys.value){
     case 'plaintext':
       var keys = null;
       break;
@@ -463,7 +278,7 @@ console.log(`creating page select option ${page.name}, value ${page.cid.toString
       var keys = await signingAccount.keys.readFrom(other.value);
       break;
     default:
-      var keys = await signingAccount.keys.readFrom(this.blockParameters.inKeys.value)
+      var keys = await signingAccount.keys.readFrom(this.topBar.inKeys.value)
     }
     
     try {
@@ -488,23 +303,25 @@ console.log(`creating page select option ${page.name}, value ${page.cid.toString
 
   static lockId = Symbol();
   static readOnlyMode(bool){
-    console.log(`window.collab is: `, window?.collab);
+    console.log(`entered readOnlyMode(${bool}) window.collab: `, window?.collab);
+    const bB = window.collab.bottomBar;
     const editor = window.watchdog.editor;
-    const pageSelectLabel = bool ? 'Reading Page: ' : 'Editing Page: ';
     bool ? editor.enableReadOnlyMode(this.lockId) : editor.disableReadOnlyMode(this.lockId);
-    Array.from(document.getElementsByClassName('pageControls')).forEach(el => el.hidden = true);
-    document.getElementById('editSelect').hidden = bool
-    document.getElementById('pageSelectLabel').textContent = pageSelectLabel;
-    document.getElementById('saveButton').disabled = bool;
-    document.getElementById('editButton').hidden = !bool;
+    Array.from(document.getElementsByClassName('documentEdits')).map(el => el.hidden = true);
+    bB.editSelect.el.hidden = bB.saveButton.el.disabled = bool;
+    bB.editButton.el.hidden = !bool;
   }
 
   static refreshPageview(){
     const node = window.collab;
-    node.#pageControls = new PageControls(node).reset();
     console.log(`refreshing page for `, node);
     if(Object.hasOwn(window, 'watchdog'))
       window.watchdog.destroy();
+    node.#bottomBar = new PageControls(node);
+    if(Object.hasOwn(node.value, 'editorContents'))
+      node.editorEl.innerHTML = node.value.editorContents;
+    else
+      node.editorEl.innerHTML = '';
 /*
     node.elements = [];
     for(const elId of node.elIds){
@@ -563,7 +380,7 @@ console.log(`calling replaceWith() on element id ${elId}`);
     node.elements.pageSelect.addEventListener('change', e => CKE5_Page.openPage(node.signingAccount, e.target.value));
     //node.elements.rmSelect.addEventListener('change', e => node.rmSubpage(e));
     node.elements.editSelect.addEventListener('change', e => {
-      Array.from(document.getElementsByClassName('pageControls')).map(el => el.hidden = el.id !== e.target.value)
+      Array.from(document.getElementsByClassName('documentEdits')).map(el => el.hidden = el.id !== e.target.value)
     })
 
     node.elements.pageName.addEventListener('change', async e => {
@@ -647,9 +464,8 @@ console.log(`filtered ${nameInputs.length} name input elments: `, nameInputs);
   async saveData(editor){
     console.log(`saving data for this: `, this);
     const value = Object.assign({}, this.value);
-    const newColName = document.getElementById('newName').value
-    if(newColName.length > 0)
-      value.colName = newColName;
+    if(this.#bottomBar.newName.value.length > 0)
+      value.colName = this.#bottomBar.newName.value;
     this.pageLinks.update(value);
     value.editorContents = editor.getData();
     const keys = await this.signingAccount.keys.writeTo('self');
@@ -671,11 +487,4 @@ console.log(`encrypting for self with keys `, keys);
   }
 }
 
-/* Now start the program running
- */
-
-CKE5_Page.blockParameters = new BlockParameters(queryParameters);
-//CKE5_Page.blockParameters.addressInput.el.value = document.getElementById('addresses').children[0].value;
-//CKE5_Page.blockParameters.addressInput.el.dispatchEvent(new Event('change'))
-
-//CKE5_Page.publishPlaintext(window.collab, keys, 'tssDoc');
+export {CKE5_Page};

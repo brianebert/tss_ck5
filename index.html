@@ -143,7 +143,7 @@
 				</div>
 				<div style="padding: 0.25em 0 0.5em">
 					<span>
-						<label id="pageSelectLabel" for="pageSelect">Reading Page:</label>
+						<label for="pageSelect">Select Page:</label>
 						<select id="pageSelect" style="font-weight: bold;" disabled></select>
 						<button id="homeButton" type="button" disabled>Home</button>
 						<button id="upButton" type="button" disabled>Up</button>
@@ -154,8 +154,8 @@
 						<span>
 							<button id="editButton" type="button">Edit Document</button>
 						</span>
-						<span hidden>
-							<select id="editSelect">
+						<span>
+							<select id="editSelect" hidden>
 								<option value="" selected>Select From</option>
 								<option value="newPage">New:</option>
 								<option value="linkPage">Link:</option>
@@ -165,28 +165,28 @@
 							</select>
 						</span>
 						<span>
-							<span id="newPage" class="pageControls" hidden>
+							<span id="newPage" class="documentEdits" hidden>
 								<input id="pageName" class="nameInput" type="text" placeholder="PAGE NAME" pattern="^((?!up|UP|Up|home|Home|HOME).)*$"
 											 style="font-size:inherit; border: inherit; outline: inherit;"/>
 							</span>
-							<span id="linkPage" class="pageControls" hidden>
+							<span id="linkPage" class="documentEdits" hidden>
 								<input id="linkName" class="nameInput" type="text" placeholder="LINK NAME" pattern="^((?!up|UP|Up|home|Home|HOME).)*$"
 											 style="font-size:inherit; border: inherit; outline: inherit;"/>
 								<label>To:</label>
 								<input id="linkAddress" class="addressInput" type="text" size="60" placeholder="TO ADDRESS"
 											 style="font-size:inherit; border: inherit; outline: inherit;"/>
 							</span>
-							<span id="unlinkPage" class="pageControls" hidden>
-								<input id="unlinkName" class="nameInput" type="text" placeholder="NAME" pattern="^((?!up|UP|Up|home|Home|HOME).)*$"
+							<span id="unlinkPage" class="documentEdits" hidden>
+								<input id="unlinkName" class="nameInput" type="text" placeholder="UNLINK NAME" pattern="^((?!up|UP|Up|home|Home|HOME).)*$"
 											 style="font-size:inherit; border: inherit; outline: inherit;"/>
 							</span>
-							<span id="rmPage" class="pageControls" style="border: none;outline: none;" hidden>
+							<span id="rmPage" class="documentEdits" style="border: none;outline: none;" hidden>
 								<input id="rmAddress" class="addressInput" type="text" size="60" placeholder="ADDRESS"
 											 style="font-size:inherit; border: inherit; outline: inherit;"/>
 							</span>
-							<span id="renamePage" class="pageControls" style="border: none;outline: none;" hidden>
+							<span id="renamePage" class="documentEdits" style="border: none;outline: none;" hidden>
 								<output id="oldName" type="text"
-											 style="font-size:inherit; border: inherit; outline: inherit;"/>
+											 style="font-size:inherit; border: inherit; outline: inherit;"></output>
 								<label>To: </label>
 								<input id="newName" class="nameInput" type="text" placeholder="NEW NAME" pattern="^((?!up|UP|Up|home|Home|HOME).)*$"
 											 style="font-size:inherit; border: inherit; outline: inherit;"/>
