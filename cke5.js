@@ -122,9 +122,12 @@ function PageControls(node){
     reset: function(){
       this.el.value = '';
       this.el.addEventListener('change', e => {
-        Array.from(document.getElementById('addresses')).filter(child => child.value === e.target.value).map(child => child.remove());
-        // ?? CKE5_Page.topBar.addressInput.dispatchEvent(new Event('change'));
+        Array.from(document.getElementById('addresses').children)
+             .filter(child => child.value === e.target.value)
+             .pop().remove();
+        CKE5_Page.topBar.addressInput.value = '';
         CKE5_Page.rm(e.target.value);
+        //?? CKE5_Page.openPage(sourceAccount, blockParameters.addressInput.value)
       })
     }
   };
@@ -167,7 +170,6 @@ console.log(`constructing PageControls with keys `, Object.keys(this));
       configurable: true,
       enumerable: false,
     });
-console.log(`initialized ${key}`);
   }
   this.reset(node);
 }
@@ -179,7 +181,8 @@ class CKE5_Page extends Encrypted_Node {
     // element editor uses
     this.editorEl = document.querySelector('.editor');
     this.pageLinks = {
-      links: {},
+      // floats links from page source for editing
+      // links property is added in CKE5_Page.refreshPaveview
       onclick: e => CKE5_Page.openPage(this.signingAccount, e.target.value),
       push: function(key, value){
         if(Object.keys(this.links).includes(key) || Object.values(this.links).includes(value))
@@ -289,7 +292,6 @@ console.log(`creating page select option ${page.name}, value ${page.cid.toString
   console.log(`created page ${window.collab.name} `, window.collab);
       }
       await this.refreshPageview(window.collab);
-      window.collab.cache = this.cache; // here for debugging. Can remove later
       console.log(`${window.collab.name}'s subpage links are: `, window.collab.links);
       return window.collab
     } catch (err) {
@@ -311,21 +313,20 @@ console.log(`creating page select option ${page.name}, value ${page.cid.toString
 
   static async refreshPageview(node){
     console.log(`refreshing page for `, node);
+    node.#bottomBar = new PageControls(node);
     if(Object.hasOwn(window, 'editor'))
       window.editor.destroy();
-    node.#bottomBar = new PageControls(node);
     node.editorEl.innerHTML = node.value.editorContents;
-    if(node.parents.length === 0)
-      this.mapPages(node, await node.signingAccount.keys.readFrom(this.topBar.inKeys.value), node.cid.toString())
-    //console.log(`await new CK_Editor(node.editorEl) returns `, await new CK_Editor(node.editorEl));
     window.editor = await new CK_Editor(node.editorEl, node.#bottomBar.saveButton.el);
-    console.log(`refreshPageview(${node.name}) created editor: `, window.editor);
+    node.pageLinks.links = node.links;
+    node.pageLinks.render();
     this.readOnlyMode(true);
-    window.scroll(0,0);
-    //.then(wd => window.watchdog = wd)
-    //.then(() => console.log(`created editor: `, window.editor))
-    //.then(() => this.readOnlyMode(true));  
-    
+    if(node.parents.length === 0)
+      if(this.topBar.traverse.value)
+        this.mapPages(node, await node.signingAccount.keys.readFrom(this.topBar.inKeys.value), node.cid.toString());
+      else
+        this.mapPages(node);
+    window.scroll(0,0);    
   }
 
   static startAutosave(){
@@ -358,5 +359,5 @@ console.log(`encrypting for self with keys `, keys);
     })
   }
 }
-
+window.CKE5_Page = CKE5_Page; // delete this after debug
 export {CKE5_Page};

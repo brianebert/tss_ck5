@@ -1,18 +1,18 @@
-  // saves content immediately if user declines to leave page
+// saves content immediately if user declines to leave page
 function beforeUnloadListener(e){
     e.preventDefault();
     e.returnValue = '';
-    const editor = window.watchdog.editor;
+    const editor = window.editor;
     const pendingActions = editor.plugins.get( 'PendingActions' );
     if(Array.from(pendingActions).filter(el => el.message === 'Saving changes').length)
       return editor.plugins.get('Autosave').save(editor)      
   }
 
-  // Update the "Status: Saving..." information.
-function displayStatus( editor ) {
+function displayStatus( editor, statusEl ) {
     const toolbarElement = editor.ui.view.toolbar.element;
     const pendingActions = editor.plugins.get( 'PendingActions' );
 
+    // hide or reveal editor tool bar
     editor.on( 'change:isReadOnly', ( evt, propertyName, isReadOnly ) => {
       if ( isReadOnly ) {
         toolbarElement.style.display = 'none';
@@ -20,6 +20,7 @@ function displayStatus( editor ) {
         toolbarElement.style.display = 'flex';
       }
     });
+    // adds and removes beforeUnloadListener, indicating status on element passed
     pendingActions.on( 'change:hasAny', ( evt, propertyName, newValue ) => {
       if ( newValue ) {
         console.log(`detected editor content change at: ${new Date()}`);
@@ -34,7 +35,7 @@ function displayStatus( editor ) {
   }
 
 
-// creates an editor with a CK watchdog wrapped around it.
+// creates an editor.
 // Calls a beforeUnload listener to prevent loss of data
 export function CK_Editor(editorEl, statusEl){
   function handleEditorError( error ) { // from ckeditor demo
@@ -45,6 +46,6 @@ export function CK_Editor(editorEl, statusEl){
   };
 
   return window.CKSource.Editor.create(editorEl, {licenseKey: '', width: '80%'})
-               .then((editor) => displayStatus(editor, statusEl))
+               .then(editor => displayStatus(editor, statusEl))
                .catch( handleEditorError )   
 }

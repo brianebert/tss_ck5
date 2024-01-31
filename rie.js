@@ -170,7 +170,6 @@ function BlockParameters(queryParameters){
       enumerable: false,
     });
     this[key].init(queryParameters, this);
-console.log(`initialized ${key}`);
   }
 }
 
