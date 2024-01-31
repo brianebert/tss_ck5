@@ -1,5 +1,5 @@
 import {Encrypted_Node} from '@brianebert/tss';
-import {CK_Watchdog} from './editor.js';
+import {CK_Editor} from './editor.js';
 import { CID } from 'multiformats/cid'
 
 
@@ -8,10 +8,10 @@ function PageControls(node){
   this.saveButton = {
     reset: function(){
       this.el.addEventListener('click', async e => {
-        const autoSave = window.watchdog.editor.plugins.get('Autosave');
+        const autoSave = window.editor.plugins.get('Autosave');
         console.log(`autoSave is: `, autoSave);
         if(autoSave.state === 'waiting')
-          await autoSave.save(window.watchdog.editor);
+          await autoSave.save(window.editor);
         CKE5_Page.readOnlyMode(true);
       })
     }
@@ -220,7 +220,6 @@ class CKE5_Page extends Encrypted_Node {
   }
 
   static topBar;
-  //static watchdog = window.watchdog = new CK_Watchdog(document.querySelector('.editor'));
 
   static async mapPages(root, keys, selectValue){
 console.log(`populating page selector for ${root.name} with ${selectValue} selected.`);
@@ -256,14 +255,12 @@ console.log(`creating page select option ${page.name}, value ${page.cid.toString
   static async openPage(signingAccount, address=null, name=''){
   console.log(`entered openPage() with name ${name}, address ${address} signingAccount `, signingAccount);
     // save old page if necessary
-    if(window?.watchdog){
-      if(window.watchdog?.editor){
-        const editor = window.watchdog.editor;
-        const pendingActions = editor.plugins.get('PendingActions');
-        if(Array.from(pendingActions).filter(pa => pa.message === 'Saving changes').length){
-          console.log(`must save ${window.collab.name} before loading new page`);
-          await editor.plugins.get('Autosave').save(editor);
-        }
+    if(window?.editor){  
+      const editor = window.editor;
+      const pendingActions = editor.plugins.get('PendingActions');
+      if(Array.from(pendingActions).filter(pa => pa.message === 'Saving changes').length){
+        console.log(`must save ${window.collab.name} before loading new page`);
+        await editor.plugins.get('Autosave').save(editor);
       }
     }
     // make keys
@@ -303,9 +300,9 @@ console.log(`creating page select option ${page.name}, value ${page.cid.toString
   static lockId = Symbol();
   static readOnlyMode(bool){
     console.log(`entered readOnlyMode(${bool}) window.collab: `, window?.collab);
-    console.log(`and window.watchdog: `, window.watchdog);
+    console.log(`and window.editor: `, window.editor);
     const bB = window.collab.bottomBar;
-    const editor = window.watchdog.editor;
+    const editor = window.editor;
     bool ? editor.enableReadOnlyMode(this.lockId) : editor.disableReadOnlyMode(this.lockId);
     Array.from(document.getElementsByClassName('documentEdits')).map(el => el.hidden = true);
     bB.editSelect.el.hidden = bB.saveButton.el.disabled = bool;
@@ -314,28 +311,26 @@ console.log(`creating page select option ${page.name}, value ${page.cid.toString
 
   static async refreshPageview(node){
     console.log(`refreshing page for `, node);
-    if(Object.hasOwn(window, 'watchdog'))
-      window.watchdog.editor.destroy();
-    //if(Object.hasOwn(node.value, 'editorContents'))
-    node.editorEl.innerHTML = node.value.editorContents;
-    //else
-      //node.editorEl.innerHTML = '';
+    if(Object.hasOwn(window, 'editor'))
+      window.editor.destroy();
     node.#bottomBar = new PageControls(node);
+    node.editorEl.innerHTML = node.value.editorContents;
     if(node.parents.length === 0)
       this.mapPages(node, await node.signingAccount.keys.readFrom(this.topBar.inKeys.value), node.cid.toString())
-    //await window.watchdog.create(node.editorEl).then(() => {
-      //this.readOnlyMode(true);
-    //});
-    return new CK_Watchdog(node.editorEl)
-    .then(wd => window.watchdog = wd)
-    .then(() => console.log(`created window.watchdog: `, window.watchdog))
-    .then(() => this.readOnlyMode(true));  
+    //console.log(`await new CK_Editor(node.editorEl) returns `, await new CK_Editor(node.editorEl));
+    window.editor = await new CK_Editor(node.editorEl, node.#bottomBar.saveButton.el);
+    console.log(`refreshPageview(${node.name}) created editor: `, window.editor);
+    this.readOnlyMode(true);
     window.scroll(0,0);
+    //.then(wd => window.watchdog = wd)
+    //.then(() => console.log(`created editor: `, window.editor))
+    //.then(() => this.readOnlyMode(true));  
+    
   }
 
   static startAutosave(){
     // Any comment will trigger CKEditor5 autosave and is stripped too!
-    window.watchdog.editor.setData('<!-- -->' + window.watchdog.editor.getData())
+    window.editor.setData('<!-- -->' + window.editor.getData())
   }
 
   // do not call directly. It will be called by the Editor's autosave module.
@@ -363,8 +358,5 @@ console.log(`encrypting for self with keys `, keys);
     })
   }
 }
-
-    window.CKE5_Page = CKE5_Page;
-    window.CK_Watchdog = CK_Watchdog;
 
 export {CKE5_Page};
