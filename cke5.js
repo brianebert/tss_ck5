@@ -220,6 +220,7 @@ class CKE5_Page extends Encrypted_Node {
   }
 
   static topBar;
+  //static watchdog = window.watchdog = new CK_Watchdog(document.querySelector('.editor'));
 
   static async mapPages(root, keys, selectValue){
 console.log(`populating page selector for ${root.name} with ${selectValue} selected.`);
@@ -256,11 +257,13 @@ console.log(`creating page select option ${page.name}, value ${page.cid.toString
   console.log(`entered openPage() with name ${name}, address ${address} signingAccount `, signingAccount);
     // save old page if necessary
     if(window?.watchdog){
-      const editor = window.watchdog.editor;
-      const pendingActions = editor.plugins.get('PendingActions');
-      if(Array.from(pendingActions).filter(pa => pa.message === 'Saving changes').length){
-        console.log(`must save ${window.collab.name} before loading new page`);
-        await editor.plugins.get('Autosave').save(editor);
+      if(window.watchdog?.editor){
+        const editor = window.watchdog.editor;
+        const pendingActions = editor.plugins.get('PendingActions');
+        if(Array.from(pendingActions).filter(pa => pa.message === 'Saving changes').length){
+          console.log(`must save ${window.collab.name} before loading new page`);
+          await editor.plugins.get('Autosave').save(editor);
+        }
       }
     }
     // make keys
@@ -288,7 +291,7 @@ console.log(`creating page select option ${page.name}, value ${page.cid.toString
         await window.collab.ready;
   console.log(`created page ${window.collab.name} `, window.collab);
       }
-      await this.refreshPageview();
+      await this.refreshPageview(window.collab);
       window.collab.cache = this.cache; // here for debugging. Can remove later
       console.log(`${window.collab.name}'s subpage links are: `, window.collab.links);
       return window.collab
@@ -300,6 +303,7 @@ console.log(`creating page select option ${page.name}, value ${page.cid.toString
   static lockId = Symbol();
   static readOnlyMode(bool){
     console.log(`entered readOnlyMode(${bool}) window.collab: `, window?.collab);
+    console.log(`and window.watchdog: `, window.watchdog);
     const bB = window.collab.bottomBar;
     const editor = window.watchdog.editor;
     bool ? editor.enableReadOnlyMode(this.lockId) : editor.disableReadOnlyMode(this.lockId);
@@ -308,23 +312,24 @@ console.log(`creating page select option ${page.name}, value ${page.cid.toString
     bB.editButton.el.hidden = !bool;
   }
 
-  static async refreshPageview(){
-    const node = window.collab;
+  static async refreshPageview(node){
     console.log(`refreshing page for `, node);
     if(Object.hasOwn(window, 'watchdog'))
-      window.watchdog.destroy();
-    if(Object.hasOwn(node.value, 'editorContents'))
-      node.editorEl.innerHTML = node.value.editorContents;
-    else
-      node.editorEl.innerHTML = '';
+      window.watchdog.editor.destroy();
+    //if(Object.hasOwn(node.value, 'editorContents'))
+    node.editorEl.innerHTML = node.value.editorContents;
+    //else
+      //node.editorEl.innerHTML = '';
     node.#bottomBar = new PageControls(node);
     if(node.parents.length === 0)
       this.mapPages(node, await node.signingAccount.keys.readFrom(this.topBar.inKeys.value), node.cid.toString())
-    window.watchdog = new CK_Watchdog(
-      node.editorEl, 
-      () => CKE5_Page.readOnlyMode(true), 
-      document.getElementById('saveButton')
-    );    
+    //await window.watchdog.create(node.editorEl).then(() => {
+      //this.readOnlyMode(true);
+    //});
+    return new CK_Watchdog(node.editorEl)
+    .then(wd => window.watchdog = wd)
+    .then(() => console.log(`created window.watchdog: `, window.watchdog))
+    .then(() => this.readOnlyMode(true));  
     window.scroll(0,0);
   }
 
@@ -336,7 +341,7 @@ console.log(`creating page select option ${page.name}, value ${page.cid.toString
   // do not call directly. It will be called by the Editor's autosave module.
   async saveData(editor){
     console.log(`saving data for this: `, this);
-    const value = Object.assign({}, this.value);
+    let value = Object.assign({}, this.value);
     if(this.#bottomBar.newName.value.length > 0)
       value.colName = this.#bottomBar.newName.value;
     value = this.pageLinks.update(value);
@@ -358,5 +363,8 @@ console.log(`encrypting for self with keys `, keys);
     })
   }
 }
+
+    window.CKE5_Page = CKE5_Page;
+    window.CK_Watchdog = CK_Watchdog;
 
 export {CKE5_Page};
