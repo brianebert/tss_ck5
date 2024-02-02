@@ -150,8 +150,14 @@ function BlockParameters(queryParameters){
   Object.defineProperty(this, 'persistAll', {
     get: () => {
       console.log(`persist all of this? `, this);
-      const {source, inKeys, sink, outKeys} = this;
-      return sink.value !== source.value || inKeys.value !== outKeys.value
+      const {source, inKeys, sink, outKeys, traverse} = this;
+      const truther = {
+      	'0': sink.value !== source.value,
+      	'1': inKeys.value !== outKeys.value,
+      	'2': traverse.value
+      }
+      console.log(`persistAll is ${sink.value !== source.value || inKeys.value !== outKeys.value && traverse.value} with `, truther);
+      return sink.value !== source.value || inKeys.value !== outKeys.value && traverse.value
     }
   });
 
@@ -173,4 +179,7 @@ function BlockParameters(queryParameters){
   }
 }
 
-CKE5_Page.topBar = new BlockParameters(queryParameters);
+//CKE5_Page.topBar = new BlockParameters(queryParameters);
+//CKE5_Page.blockParameters = CKE5_Page.topBar;
+CKE5_Page.blockParameters = new BlockParameters(queryParameters);
+CKE5_Page.openPage(sourceAccount);

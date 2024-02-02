@@ -7,6 +7,7 @@ function PageControls(node){
   const outerContext = this;
   this.saveButton = {
     reset: function(){
+      //this.el.replaceWith(this.el.cloneNode(true));
       this.el.addEventListener('click', async e => {
         const autoSave = window.editor.plugins.get('Autosave');
         console.log(`autoSave is: `, autoSave);
@@ -34,16 +35,22 @@ function PageControls(node){
   };
   this.oldName = {
     reset: function(node){
-      this.el.value = node.name;
+      this.el.value = node.name.length ? node.name : 'unnamed';
     }
   };
   this.newName = {
     reset: function(){
       this.el.value = '';
+      //this.el.replaceWith(this.el.cloneNode(true));
+      this.el.addEventListener('change', e => {
+        if(e.target.value.length)
+          CKE5_Page.startAutosave();
+      });
     }
   };
   this.pageSelect = {
     reset: function(node){
+      //this.el.replaceWith(this.el.cloneNode(true));
       const pages = this.el.children;
       if(pages.length > 0)
         for(const page of Array.from(pages))
@@ -53,6 +60,7 @@ function PageControls(node){
   };
   this.homeButton = {
     reset: function(node){
+      //this.el.replaceWith(this.el.cloneNode(true));
       this.el.value = node.cid.toString();
       this.el.disabled = !node.parents.length;
       this.el.addEventListener('click', e => CKE5_Page.openPage(node.signingAccount, e.target.value))
@@ -60,32 +68,40 @@ function PageControls(node){
   };
   this.upButton = {
     reset: function(node){
+      //this.el.replaceWith(this.el.cloneNode(true));
+      this.el.disabled = !node.parents.length;
       if(node.parents.length > 0){
         this.el.value = node.parents[0].cid.toString();
-        this.el.disabled = !node.parents.length;
         this.el.addEventListener('click', e => CKE5_Page.openPage(node.signingAccount, e.target.value))
       }
     }
   };
   this.editButton = {
     reset: function(node){
+      this.el.hidden = false;
+      //this.el.replaceWith(this.el.cloneNode(true));
+  console.log(`refreshed `, this.el);
       this.el.addEventListener('click', e => CKE5_Page.readOnlyMode(false))
     }
   };
   this.editSelect = {
-    reset: function(){
+    reset: function(node){
+      this.el.hidden = true;
+      //this.el.replaceWith(this.el.cloneNode(true));
+      this.el.children[0].selected = true;
       this.el.addEventListener('change', e => 
         Array.from(document.getElementsByClassName('documentEdits'))
              .map(el => el.hidden = el.id !== e.target.value))
     }    
   };
   this.pageName = {
-    reset: function(){
+    reset: function(node){
       this.el.value = '';
+      //this.el.replaceWith(this.el.cloneNode(true));
       this.el.addEventListener('change', async e => {
         if(e.target.value.length > 0){
           const page = await CKE5_Page.openPage(node.signingAccount, null, e.target.value);
-          await this.mapPages(page) // keys, selectValue not needed since only will create the one option
+          //await this.mapPages(page) // keys, selectValue not needed since only will create the one option
           //document.getElementById('newPage').hidden = true
         }
       })
@@ -94,24 +110,27 @@ function PageControls(node){
   this.linkName = {
     reset: function(node){
       this.el.value = '';
+      //this.el.replaceWith(this.el.cloneNode(true));
       this.el.addEventListener('change', e => {
-        if(e.target.value.length > 0 && this.linkAddress.value.length > 0)
-          tryToLink(node, e.target.value, this.linkAddress.value)
+        if(e.target.value.length > 0 && outerContext.linkAddress.value.length > 0)
+          tryToLink(node, e.target.value, outerContext.linkAddress.value)
       })
     }
   };
   this.linkAddress = {
     reset: function(node){
       this.el.value = '';
+      //this.el.replaceWith(this.el.cloneNode(true));
       this.el.addEventListener('change', e => {
-        if(e.target.value.length > 0 && this.linkName.value.length > 0)
-          tryToLink(node, this.linkName.value, e.target.value)
+        if(e.target.value.length > 0 && outerContext.linkName.value.length > 0)
+          tryToLink(node, outerContext.linkName.value, e.target.value)
       })
     }
   };
   this.unlinkName = {
     reset: function(node){
       this.el.value = '';
+      //this.el.replaceWith(this.el.cloneNode(true));
       this.el.addEventListener('change', e => {
         if(e.target.value.length > 0 )
           node.pageLinks.rm(e.target.value);
@@ -119,15 +138,20 @@ function PageControls(node){
     }  
   };
   this.rmAddress = {
-    reset: function(){
+    reset: function(node){
       this.el.value = '';
+      //this.el.replaceWith(this.el.cloneNode(true));
       this.el.addEventListener('change', e => {
-        Array.from(document.getElementById('addresses').children)
-             .filter(child => child.value === e.target.value)
-             .pop().remove();
-        CKE5_Page.topBar.addressInput.value = '';
-        CKE5_Page.rm(e.target.value);
-        //?? CKE5_Page.openPage(sourceAccount, blockParameters.addressInput.value)
+        if(e.target.value.length){
+          const addressInputOption = Array.from(document.getElementById('addresses').children)
+                                          .filter(child => child.value === e.target.value);
+          if(addressInputOption.length)
+            addressInputOption.pop().remove();
+          CKE5_Page.rm(e.target.value);
+        //node.bottomBar.rmAddress.value = '';
+          CKE5_Page.openPage(node.signingAccount, '');
+          CKE5_Page.blockParameters.addressInput.value = '';
+        }
       })
     }
   };
@@ -137,29 +161,38 @@ function PageControls(node){
       const cid = CID.parse(address);
       page.pageLinks.push(name, cid);
       page.pageLinks.render();
+      page.bottomBar.editSelect.el;
     } catch (err) {
       console.error(`caught error linking pages ${page.cid.toString()} and ${address} with name ${name}`, err);
     }
   }
+  function cloneUniquely(el){
+    const elNew = el.cloneNode(false);
+    el.parentElement.appendChild(elNew);
+    for(const child of Array.from(el.children))
+      elNew.appendChild(child);
+    //el.remove();
+    return elNew
+  }
   Object.defineProperty(this, 'reset', {
     value: function(node){
-      const textInputs = [...document.getElementsByClassName('nameInput'),...document.getElementsByClassName('addressInput')];
       for(const [key, value] of Object.entries(this))
         value.reset(node);
-      textInputs.map(input => input.addEventListener('keyup', e => {
-        input.size = 4 + input.value.length;;
-        e.target.setCustomValidity('');
-        if(!e.target.reportValidity())
-          e.target.setCustomValidity(`name cannot be ${e.target.value}`);
-      }))
       return this
     },
     configurable: false,
     enumerable: false,
   });
-console.log(`constructing PageControls with keys `, Object.keys(this));
+  const textInputArray = Array.from(document.getElementById('pageEditInputs').getElementsByTagName('input'));
   for(const key of Object.keys(this)){
-    this[key].el = document.getElementById(key);      
+    this[key].el = document.getElementById(key);
+    //this[key].el = cloneUniquely(document.getElementById(key)); // cloneUniquely removes el.id from DOM 
+    textInputArray.map(input => input.addEventListener('keyup', e => {
+      input.size = 3 + input.value.length;;
+      e.target.setCustomValidity('');
+      if(!e.target.reportValidity())
+        e.target.setCustomValidity(`name cannot be ${e.target.value}`);
+    }))  
     Object.defineProperty(this[key], 'value', {
       get: function(){
         return this.el.value
@@ -172,6 +205,7 @@ console.log(`constructing PageControls with keys `, Object.keys(this));
     });
   }
   this.reset(node);
+console.log(`constructed PageControls `, this);
 }
 
 class CKE5_Page extends Encrypted_Node {
@@ -222,13 +256,19 @@ class CKE5_Page extends Encrypted_Node {
     return this.#bottomBar
   }
 
-  static topBar;
+  get isDocumentRoot(){
+    return !!this.parents.length && CK_Editor.blockParameters.traverse.value
+  }
+
+  static set params(params){
+    this.blockParameters = params;
+  }
 
   static async mapPages(root, keys, selectValue){
 console.log(`populating page selector for ${root.name} with ${selectValue} selected.`);
     const subPageLinks = Array.from(document.getElementById('subPages').children);
     subPageLinks.map(link => link.disabled = true);
-    const el = document.getElementById('pageSelect');
+    const el = root.bottomBar.pageSelect.el;
     el.disabled = true;
     el.innerHTML = '';
     const opts = [];
@@ -244,7 +284,7 @@ console.log(`creating page select option ${page.name}, value ${page.cid.toString
       opts.unshift(pageOption);
       return Promise.resolve();
     }
-    if(CKE5_Page.topBar.traverse.value){
+    if(CKE5_Page.blockParameters.traverse.value){
       await this.traverse(root.cid, populateSelectOption, keys);
       subPageLinks.map(link => link.disabled = false);
     }
@@ -267,7 +307,7 @@ console.log(`creating page select option ${page.name}, value ${page.cid.toString
       }
     }
     // make keys
-    switch(this.topBar.inKeys.value){
+    switch(this.blockParameters.inKeys.value){
     case 'plaintext':
       var keys = null;
       break;
@@ -277,7 +317,7 @@ console.log(`creating page select option ${page.name}, value ${page.cid.toString
       var keys = await signingAccount.keys.readFrom(other.value);
       break;
     default:
-      var keys = await signingAccount.keys.readFrom(this.topBar.inKeys.value)
+      var keys = await signingAccount.keys.readFrom(this.blockParameters.inKeys.value);
     }
     
     try {
@@ -287,7 +327,9 @@ console.log(`creating page select option ${page.name}, value ${page.cid.toString
       }
       else {
   console.log(`creating page ${name} using signingAccount `, signingAccount);
-        window.collab = new this({colName: name}, signingAccount);
+        const prompt0 = `<h1>Welcome!</h1><p>to get started, enter or choose "<span style="color:hsl(0, 0%, 60%);">Document Address</span>`;
+        const prompt1 = `" at the upper left then click "<b>read</b>," or click "<b>Edit Document</b>" on the lower right</p>`;
+        window.collab = new this({colName: name, editorContents: prompt0 + prompt1}, signingAccount);
         await window.collab.ready;
   console.log(`created page ${window.collab.name} `, window.collab);
       }
@@ -303,10 +345,11 @@ console.log(`creating page select option ${page.name}, value ${page.cid.toString
   static readOnlyMode(bool){
     console.log(`entered readOnlyMode(${bool}) window.collab: `, window?.collab);
     console.log(`and window.editor: `, window.editor);
-    const bB = window.collab.bottomBar;
     const editor = window.editor;
-    bool ? editor.enableReadOnlyMode(this.lockId) : editor.disableReadOnlyMode(this.lockId);
+    const bB = window.collab.bottomBar;
+    bB.editSelect.el.children[0].selected = true;
     Array.from(document.getElementsByClassName('documentEdits')).map(el => el.hidden = true);
+    bool ? editor.enableReadOnlyMode(this.lockId) : editor.disableReadOnlyMode(this.lockId);
     bB.editSelect.el.hidden = bB.saveButton.el.disabled = bool;
     bB.editButton.el.hidden = !bool;
   }
@@ -322,8 +365,8 @@ console.log(`creating page select option ${page.name}, value ${page.cid.toString
     node.pageLinks.render();
     this.readOnlyMode(true);
     if(node.parents.length === 0)
-      if(this.topBar.traverse.value)
-        this.mapPages(node, await node.signingAccount.keys.readFrom(this.topBar.inKeys.value), node.cid.toString());
+      if(this.blockParameters.traverse.value)
+        this.mapPages(node, await node.signingAccount.keys.readFrom(this.blockParameters.inKeys.value), node.cid.toString());
       else
         this.mapPages(node);
     window.scroll(0,0);    
@@ -345,12 +388,14 @@ console.log(`creating page select option ${page.name}, value ${page.cid.toString
     const keys = await this.signingAccount.keys.writeTo('self');
 console.log(`encrypting for self with keys `, keys);
     return this.update(value, keys).then(async root => {
-      document.getElementById('homeButton').value = root.cid.toString();
-      document.getElementById('editingRoot').value = root.cid.toString();
-      document.getElementById('editingPage').value = this.cid.toString();
-      if(this.parents.length)
-        // this needs to take into account when there are more than one parent.
-        document.getElementById('upButton').value = this.parents[0].cid.toString();
+      this.#bottomBar.reset(this);
+      this.#bottomBar.editingRoot.reset(root);
+      /*this.#bottomBar.editingRoot.reset(root);
+      this.#bottomBar.editingPage.reset(this);
+      this.#bottomBar.homeButton.reset(root);
+      this.#bottomBar.editSelect.reset(this);
+      this.#bottomBar.editButton.reset(this);
+      this.#bottomBar.upButton.reset(this);*/
       CKE5_Page.persist(root, keys);
       CKE5_Page.mapPages(
         root, await this.signingAccount.keys.readFrom('self'), 

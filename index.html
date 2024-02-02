@@ -7,23 +7,24 @@
 		<link rel="icon" type="image/png" href="https://c.cksource.com/a/1/logos/ckeditor5.png">
 		<link rel="stylesheet" type="text/css" href="styles.css">
 		<style type="text/css">
-			#theForm button {
-				border: inherit;
+			.ioBar button {
+				border-style: solid;
+  			border-width: 1px;
 				font-size:inherit;
 				font-weight: bold;
-
 			}
-			#theForm button:hover {
+			.ioBar button:hover {
 				cursor: pointer;
 			}
-			#theForm button:active {
+			.ioBar button:active {
 				border: solid;
 			}
-			#theForm output {
+			.ioBar output {
 				font-style: oblique;
 				font-weight: bold;
+				margin: 0.5em;
 			}
-			#theForm select {
+			.ioBar select {
 				 font-size:inherit;
 				 border: inherit;
 				 outline: inherit;
@@ -31,7 +32,7 @@
 		</style>
 	</head>
 	<body style="margin:0;padding:0% 5%;" data-editor="ClassicEditor" data-collaboration="false" data-revision-history="false">
-		<div id="topBar" style="font-size: 0.75em; background-color: #f2f2f3; padding: 0 2em;
+		<div id="topBar" class="ioBar" style="font-size: 0.75em; background-color: #f2f2f3; padding: 0 2em;
 						border-color: #ccced1; border-radius: 2px; border-width: 1px; border-style: solid;
 						left: 5%;right: 5%;">
 			<div>
@@ -124,11 +125,11 @@
 			Below controls navigation between pages of a document being read or edited.
 			Pages are stored on IPFS, linked and encrypted with tss
 		-->
-		<div id="bottomBar" style="font-size: 0.75em; background-color: #f2f2f3; padding: 0 2em;
+		<div id="bottomBar" class="ioBar" style="font-size: 0.75em; background-color: #f2f2f3; padding: 0 2em;
 				 border-color: #ccced1; border-radius: 2px; border-width: 1px; border-style: solid;
 				 position: sticky; z-index: 100; bottom: 0;left: 5%;right: 5%;">
-			<div id="theForm">
-				<div style="padding: 0.5em 0 0.25em">
+			<div id="theForm" style="padding: 0.5em 0 0.25em">
+				<div>
 					<span>
 						<button id="saveButton" type="button" style="background: #ccffcc;" disabled>Save Document</button>
 					</span>
@@ -141,14 +142,20 @@
 						<output id="editingRoot"/></output>
 					</span>
 				</div>
-				<div style="padding: 0.25em 0 0.5em">
+				<div>
 					<span>
+						<span>
 						<label for="pageSelect">Select Page:</label>
 						<select id="pageSelect" style="font-weight: bold;" disabled></select>
-						<button id="homeButton" type="button" disabled>Home</button>
-						<button id="upButton" type="button" disabled>Up</button>
-						<span id="subpagesLabel">Subpages:</span>
-						<span id="subPages"/>
+						</span>
+						<span>
+							<button id="homeButton" type="button" disabled>Home</button>
+							<button id="upButton" type="button" disabled>Up</button>
+						</span>
+						<span>
+							<span id="subpagesLabel">Subpages:</span>
+							<span id="subPages"/>
+						</span>
 					</span>
 					<span style="float: right;">
 						<span>
@@ -164,31 +171,31 @@
 								<option value="renamePage">Rename:</option>
 							</select>
 						</span>
-						<span>
+						<span id="pageEditInputs">
 							<span id="newPage" class="documentEdits" hidden>
-								<input id="pageName" class="nameInput" type="text" placeholder="PAGE NAME" pattern="^((?!up|UP|Up|home|Home|HOME).)*$"
+								<input id="pageName" type="text" placeholder="PAGE NAME" pattern="^((?!up|UP|Up|home|Home|HOME).)*$"
 											 style="font-size:inherit; border: inherit; outline: inherit;"/>
 							</span>
 							<span id="linkPage" class="documentEdits" hidden>
-								<input id="linkName" class="nameInput" type="text" placeholder="LINK NAME" pattern="^((?!up|UP|Up|home|Home|HOME).)*$"
+								<input id="linkName" type="text" placeholder="LINK NAME" pattern="^((?!up|UP|Up|home|Home|HOME).)*$"
 											 style="font-size:inherit; border: inherit; outline: inherit;"/>
 								<label>To:</label>
-								<input id="linkAddress" class="addressInput" type="text" size="60" placeholder="TO ADDRESS"
+								<input id="linkAddress" type="text" size="60" placeholder="TO ADDRESS"
 											 style="font-size:inherit; border: inherit; outline: inherit;"/>
 							</span>
 							<span id="unlinkPage" class="documentEdits" hidden>
-								<input id="unlinkName" class="nameInput" type="text" placeholder="UNLINK NAME" pattern="^((?!up|UP|Up|home|Home|HOME).)*$"
+								<input id="unlinkName" type="text" placeholder="UNLINK NAME" pattern="^((?!up|UP|Up|home|Home|HOME).)*$"
 											 style="font-size:inherit; border: inherit; outline: inherit;"/>
 							</span>
 							<span id="rmPage" class="documentEdits" style="border: none;outline: none;" hidden>
-								<input id="rmAddress" class="addressInput" type="text" size="60" placeholder="ADDRESS"
+								<input id="rmAddress" type="text" size="60" placeholder="ADDRESS"
 											 style="font-size:inherit; border: inherit; outline: inherit;"/>
 							</span>
 							<span id="renamePage" class="documentEdits" style="border: none;outline: none;" hidden>
 								<output id="oldName" type="text"
-											 style="font-size:inherit; border: inherit; outline: inherit;"></output>
+											 style="font-size:inherit; font-weight: normal; border: inherit; outline: inherit;"></output>
 								<label>To: </label>
-								<input id="newName" class="nameInput" type="text" placeholder="NEW NAME" pattern="^((?!up|UP|Up|home|Home|HOME).)*$"
+								<input id="newName" type="text" placeholder="NEW NAME" pattern="^((?!up|UP|Up|home|Home|HOME).)*$"
 											 style="font-size:inherit; border: inherit; outline: inherit;"/>
 							</span>
 						</span>
