@@ -2,19 +2,17 @@ import {Encrypted_Node} from '@brianebert/tss';
 import {CK_Editor} from './editor.js';
 import { CID } from 'multiformats/cid'
 
-
 function PageControls(node){
   const outerContext = this;
   this.saveButton = {
     reset: function(){
-      //this.el.replaceWith(this.el.cloneNode(true));
-      this.el.addEventListener('click', async e => {
+      this.el.addEventListener('click', async function(e){
         const autoSave = window.editor.plugins.get('Autosave');
         console.log(`autoSave is: `, autoSave);
         if(autoSave.state === 'waiting')
           await autoSave.save(window.editor);
-        CKE5_Page.readOnlyMode(true);
-      })
+        CKE5_Page.readOnlyMode(true);        
+      }, {signal: outerContext.abortControler.signal});
     }
   };
   this.editingPage = {
@@ -45,7 +43,7 @@ function PageControls(node){
       this.el.addEventListener('change', e => {
         if(e.target.value.length)
           CKE5_Page.startAutosave();
-      });
+      }, {signal: outerContext.abortControler.signal});
     }
   };
   this.pageSelect = {
@@ -55,7 +53,11 @@ function PageControls(node){
       if(pages.length > 0)
         for(const page of Array.from(pages))
           page.selected = page.value === node.cid.toString();
-      this.el.addEventListener('change', e => CKE5_Page.openPage(node.signingAccount, e.target.value))
+      this.el.addEventListener(
+        'change',
+        e => CKE5_Page.openPage(node.signingAccount, e.target.value),
+        {signal: outerContext.abortControler.signal}
+      )
     }
   };
   this.homeButton = {
@@ -63,7 +65,11 @@ function PageControls(node){
       //this.el.replaceWith(this.el.cloneNode(true));
       this.el.value = node.cid.toString();
       this.el.disabled = !node.parents.length;
-      this.el.addEventListener('click', e => CKE5_Page.openPage(node.signingAccount, e.target.value))
+      this.el.addEventListener(
+        'click',
+        e => CKE5_Page.openPage(node.signingAccount, e.target.value),
+        {signal: outerContext.abortControler.signal}
+      )
     }
   };
   this.upButton = {
@@ -72,7 +78,11 @@ function PageControls(node){
       this.el.disabled = !node.parents.length;
       if(node.parents.length > 0){
         this.el.value = node.parents[0].cid.toString();
-        this.el.addEventListener('click', e => CKE5_Page.openPage(node.signingAccount, e.target.value))
+        this.el.addEventListener(
+          'click',
+          e => CKE5_Page.openPage(node.signingAccount, e.target.value),
+          {signal: outerContext.abortControler.signal}
+        )
       }
     }
   };
@@ -81,7 +91,7 @@ function PageControls(node){
       this.el.hidden = false;
       //this.el.replaceWith(this.el.cloneNode(true));
   console.log(`refreshed `, this.el);
-      this.el.addEventListener('click', e => CKE5_Page.readOnlyMode(false))
+      this.el.addEventListener('click', e => CKE5_Page.readOnlyMode(false), {signal: outerContext.abortControler.signal})
     }
   };
   this.editSelect = {
@@ -89,9 +99,11 @@ function PageControls(node){
       this.el.hidden = true;
       //this.el.replaceWith(this.el.cloneNode(true));
       this.el.children[0].selected = true;
-      this.el.addEventListener('change', e => 
-        Array.from(document.getElementsByClassName('documentEdits'))
-             .map(el => el.hidden = el.id !== e.target.value))
+      this.el.addEventListener(
+        'change',
+        e => Array.from(document.getElementsByClassName('documentEdits')).map(el => el.hidden = el.id !== e.target.value),
+        {signal: outerContext.abortControler.signal}
+      )
     }    
   };
   this.pageName = {
@@ -104,7 +116,7 @@ function PageControls(node){
           //await this.mapPages(page) // keys, selectValue not needed since only will create the one option
           //document.getElementById('newPage').hidden = true
         }
-      })
+      }, {signal: outerContext.abortControler.signal})
     }
   };
   this.linkName = {
@@ -114,7 +126,7 @@ function PageControls(node){
       this.el.addEventListener('change', e => {
         if(e.target.value.length > 0 && outerContext.linkAddress.value.length > 0)
           tryToLink(node, e.target.value, outerContext.linkAddress.value)
-      })
+      }, {signal: outerContext.abortControler.signal})
     }
   };
   this.linkAddress = {
@@ -124,7 +136,7 @@ function PageControls(node){
       this.el.addEventListener('change', e => {
         if(e.target.value.length > 0 && outerContext.linkName.value.length > 0)
           tryToLink(node, outerContext.linkName.value, e.target.value)
-      })
+      }, {signal: outerContext.abortControler.signal})
     }
   };
   this.unlinkName = {
@@ -134,7 +146,7 @@ function PageControls(node){
       this.el.addEventListener('change', e => {
         if(e.target.value.length > 0 )
           node.pageLinks.rm(e.target.value);
-      })
+      }, {signal: outerContext.abortControler.signal})
     }  
   };
   this.rmAddress = {
@@ -152,7 +164,7 @@ function PageControls(node){
           CKE5_Page.openPage(node.signingAccount, '');
           CKE5_Page.blockParameters.addressInput.value = '';
         }
-      })
+      }, {signal: outerContext.abortControler.signal})
     }
   };
   // tryToLink is called by linkName and linkAddress change handlers
@@ -174,6 +186,11 @@ function PageControls(node){
     //el.remove();
     return elNew
   }
+  Object.defineProperty(this, 'abortControler', {
+    value: new AbortController(),
+    configurable: false,
+    enumerable: false
+  })
   Object.defineProperty(this, 'reset', {
     value: function(node){
       for(const [key, value] of Object.entries(this))
@@ -181,7 +198,7 @@ function PageControls(node){
       return this
     },
     configurable: false,
-    enumerable: false,
+    enumerable: false
   });
   const textInputArray = Array.from(document.getElementById('pageEditInputs').getElementsByTagName('input'));
   for(const key of Object.keys(this)){
@@ -192,7 +209,7 @@ function PageControls(node){
       e.target.setCustomValidity('');
       if(!e.target.reportValidity())
         e.target.setCustomValidity(`name cannot be ${e.target.value}`);
-    }))  
+    }, {signal: outerContext.abortControler.signal}));  
     Object.defineProperty(this[key], 'value', {
       get: function(){
         return this.el.value
@@ -204,16 +221,17 @@ function PageControls(node){
       enumerable: false,
     });
   }
+console.log(`resetting this.`, Object.keys(this))
   this.reset(node);
 console.log(`constructed PageControls `, this);
 }
 
 class CKE5_Page extends Encrypted_Node {
-  #bottomBar;
+  #bottomBar; #editorEl;
   constructor(){
     super(...arguments);
     // element editor uses
-    this.editorEl = document.querySelector('.editor');
+    this.#editorEl = document.querySelector('.editor');
     this.pageLinks = {
       // floats links from page source for editing
       // links property is added in CKE5_Page.refreshPaveview
@@ -254,10 +272,6 @@ class CKE5_Page extends Encrypted_Node {
 
   get bottomBar(){
     return this.#bottomBar
-  }
-
-  get isDocumentRoot(){
-    return !!this.parents.length && CK_Editor.blockParameters.traverse.value
   }
 
   static set params(params){
@@ -319,7 +333,8 @@ console.log(`creating page select option ${page.name}, value ${page.cid.toString
     default:
       var keys = await signingAccount.keys.readFrom(this.blockParameters.inKeys.value);
     }
-    
+    if(window?.collab)
+      window.collab.bottomBar.abortControler.abort(); // strip event listeners from page control elements
     try {
       if(address){
   console.log(`reading page from address ${address} with keys `, keys);
@@ -359,8 +374,8 @@ console.log(`creating page select option ${page.name}, value ${page.cid.toString
     node.#bottomBar = new PageControls(node);
     if(Object.hasOwn(window, 'editor'))
       window.editor.destroy();
-    node.editorEl.innerHTML = node.value.editorContents;
-    window.editor = await new CK_Editor(node.editorEl, node.#bottomBar.saveButton.el);
+    node.#editorEl.innerHTML = node.value.editorContents;
+    window.editor = await new CK_Editor(node.#editorEl, node.#bottomBar.saveButton.el);
     node.pageLinks.links = node.links;
     node.pageLinks.render();
     this.readOnlyMode(true);
