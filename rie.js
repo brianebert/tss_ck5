@@ -183,3 +183,11 @@ function BlockParameters(queryParameters){
 //CKE5_Page.blockParameters = CKE5_Page.topBar;
 CKE5_Page.blockParameters = new BlockParameters(queryParameters);
 CKE5_Page.openPage(sourceAccount);
+
+for(const [key, value] of Object.entries(localStorage)){
+	let keys = null;
+	if(key.startsWith('bafk'))
+		keys = await sourceAccount.keys.readFrom('self');
+	const page = await CKE5_Page.fromCID(sourceAccount, key, keys);
+	console.log(`${key} is named ${page.name}`);
+}
