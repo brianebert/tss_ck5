@@ -1,261 +1,6 @@
 import {Encrypted_Node} from '@brianebert/tss';
+import {PageControls, setPageClass} from './pagecon.js';
 import {CK_Editor} from './editor.js';
-import { CID } from 'multiformats/cid'
-
-function PageControls(node){
-  const outerContext = this;
-  this.saveButton = {
-    reset: function(){
-      this.el.addEventListener('click', async function(e){
-        const autoSave = window.editor.plugins.get('Autosave');
-        console.log(`autoSave is: `, autoSave);
-        if(autoSave.state === 'waiting')
-          await autoSave.save(window.editor);
-        CKE5_Page.readOnlyMode(true);        
-      }, {signal: outerContext.abortControler.signal});
-    }
-  };
-  this.editingPage = {
-    reset: function(node){
-      this.el.value = `${node.cid.toString().slice(0,7)}...${node.cid.toString().slice(-7)}`;
-    }
-  };
-  this.editingRoot = {
-    reset: function(node){
-      if(!CKE5_Page.blockParameters.traverse.value || !node.parents.length)
-        this.el.value = `${node.cid.toString().slice(0,7)}...${node.cid.toString().slice(-7)}`;
-    }
-  };
-  /*Object.defineProperty(this, 'editingRoot', {
-    value: {
-    reset: function(node){
-      this.el.value = `${node.cid.toString().slice(0,7)}...${node.cid.toString().slice(-7)}`;
-    }
-  },
-          configurable: false,
-    enumerable: false
-  });*/
-  this.oldName = {
-    reset: function(node){
-      this.el.value = node.name.length ? node.name : 'unnamed';
-    }
-  };
-  this.newName = {
-    reset: function(){
-      this.el.value = '';
-      //this.el.replaceWith(this.el.cloneNode(true));
-      this.el.addEventListener('change', e => {
-        if(e.target.value.length)
-          CKE5_Page.startAutosave();
-      }, {signal: outerContext.abortControler.signal});
-    }
-  };
-  this.pageSelect = {
-    reset: function(node){
-      //this.el.replaceWith(this.el.cloneNode(true));
-      const pages = this.el.children;
-      if(pages.length > 0)
-        for(const page of Array.from(pages))
-          page.selected = page.value === node.cid.toString();
-      this.el.addEventListener(
-        'change',
-        e => CKE5_Page.openPage(node.signingAccount, e.target.value),
-        {signal: outerContext.abortControler.signal}
-      )
-    }
-  };
-  this.homeButton = {
-    reset: function(node){
-      //this.el.replaceWith(this.el.cloneNode(true));
-      //this.el.value = node.cid.toString();
-      if(CKE5_Page.blockParameters.traverse.value && !node.parents.length){
-        if(this?.abortControler)
-          this.abortControler.abort();
-        this.abortControler = new AbortController();
-        this.el.addEventListener(
-          'click',
-          e => CKE5_Page.openPage(node.signingAccount, node.cid.toString()),
-          {signal: this.abortControler.signal}
-        )
-      }
-      this.el.disabled = !node.parents.length || !CKE5_Page.blockParameters.traverse.value;
-    }
-  };
-  /*Object.defineProperty(this, 'homeButton', {
-    value: {
-    reset: function(node){
-      //this.el.replaceWith(this.el.cloneNode(true));
-      //this.el.value = node.cid.toString();
-      this.el.disabled = !node.parents.length;
-      this.el.addEventListener(
-        'click',
-        e => CKE5_Page.openPage(node.signingAccount, e.target.value),
-        {signal: outerContext.abortControler.signal}
-      )
-    }
-  },
-      configurable: false,
-    enumerable: false
-  });*/
-  this.upButton = {
-    reset: function(node){
-      //this.el.replaceWith(this.el.cloneNode(true));
-      this.el.disabled = !node.parents.length;
-      if(node.parents.length > 0){
-        this.el.value = node.parents[0].cid.toString();
-        this.el.addEventListener(
-          'click',
-          e => CKE5_Page.openPage(node.signingAccount, e.target.value),
-          {signal: outerContext.abortControler.signal}
-        )
-      }
-    }
-  };
-  this.editButton = {
-    reset: function(node){
-      this.el.hidden = false;
-      //this.el.replaceWith(this.el.cloneNode(true));
-  console.log(`refreshed `, this.el);
-      this.el.addEventListener('click', e => CKE5_Page.readOnlyMode(false), {signal: outerContext.abortControler.signal})
-    }
-  };
-  this.editSelect = {
-    reset: function(node){
-      this.el.hidden = true;
-      //this.el.replaceWith(this.el.cloneNode(true));
-      this.el.children[0].selected = true;
-      this.el.addEventListener(
-        'change',
-        e => Array.from(document.getElementsByClassName('documentEdits')).map(el => el.hidden = el.id !== e.target.value),
-        {signal: outerContext.abortControler.signal}
-      )
-    }    
-  };
-  this.pageName = {
-    reset: function(node){
-      this.el.value = '';
-      //this.el.replaceWith(this.el.cloneNode(true));
-      this.el.addEventListener('change', async e => {
-        if(e.target.value.length > 0){
-          const page = await CKE5_Page.openPage(node.signingAccount, null, e.target.value);
-          //await this.mapPages(page) // keys, selectValue not needed since only will create the one option
-          //document.getElementById('newPage').hidden = true
-        }
-      }, {signal: outerContext.abortControler.signal})
-    }
-  };
-  this.linkName = {
-    reset: function(node){
-      this.el.value = '';
-      //this.el.replaceWith(this.el.cloneNode(true));
-      this.el.addEventListener('change', e => {
-        if(e.target.value.length > 0 && outerContext.linkAddress.value.length > 0)
-          tryToLink(node, e.target.value, outerContext.linkAddress.value)
-      }, {signal: outerContext.abortControler.signal})
-    }
-  };
-  this.linkAddress = {
-    reset: function(node){
-      this.el.value = '';
-      //this.el.replaceWith(this.el.cloneNode(true));
-      this.el.addEventListener('change', e => {
-        if(e.target.value.length > 0 && outerContext.linkName.value.length > 0){
-          tryToLink(node, outerContext.linkName.value, e.target.value);
-          CKE5_Page.startAutosave();
-        }
-      }, {signal: outerContext.abortControler.signal})
-    }
-  };
-  this.unlinkName = {
-    reset: function(node){
-      this.el.value = '';
-      //this.el.replaceWith(this.el.cloneNode(true));
-      this.el.addEventListener('change', e => {
-        if(e.target.value.length > 0 )
-          node.pageLinks.rm(e.target.value);
-      }, {signal: outerContext.abortControler.signal})
-    }  
-  };
-  this.rmAddress = {
-    reset: function(node){
-      this.el.value = '';
-      //this.el.replaceWith(this.el.cloneNode(true));
-      this.el.addEventListener('change', e => {
-        if(e.target.value.length){
-          const addressInputOption = Array.from(document.getElementById('addresses').children)
-                                          .filter(child => child.value === e.target.value);
-          if(addressInputOption.length)
-            addressInputOption.pop().remove();
-          CKE5_Page.rm(e.target.value);
-        //node.bottomBar.rmAddress.value = '';
-          CKE5_Page.openPage(node.signingAccount, '');
-          CKE5_Page.blockParameters.addressInput.value = '';
-        }
-      }, {signal: outerContext.abortControler.signal})
-    }
-  };
-  // tryToLink is called by linkName and linkAddress change handlers
-  function tryToLink(page, name, address){
-console.log(`trying to link ${name} to ${address} on page ${page.name}`)
-    try {
-      const cid = CID.parse(address);
-      page.pageLinks.push(name, cid);
-      page.pageLinks.render();
-//page.bottomBar.editSelect.el; Why is this here?
-    } catch (err) {
-      console.error(`caught error linking pages ${page.cid.toString()} and ${address} with name ${name}`, err);
-    }
-  }
-  function cloneUniquely(el){
-    const elNew = el.cloneNode(false);
-    el.parentElement.appendChild(elNew);
-    for(const child of Array.from(el.children))
-      elNew.appendChild(child);
-    //el.remove();
-    return elNew
-  }
-  // abortControler.abort() is called in CKE%_Page.openPage()
-  Object.defineProperty(this, 'abortControler', {
-    value: new AbortController(),
-    configurable: false,
-    enumerable: false
-  });
-  Object.defineProperty(this, 'reset', {
-    value: function(node){
-      for(const [key, value] of Object.entries(this))
-        value.reset(node);
-      return this
-    },
-    configurable: false,
-    enumerable: false
-  });
-  const textInputArray = Array.from(document.getElementById('pageEditInputs').getElementsByTagName('input'));
-  for(const key of Object.keys(this)){
-    this[key].el = document.getElementById(key);
-    //this[key].el = cloneUniquely(document.getElementById(key)); // cloneUniquely removes el.id from DOM 
-    textInputArray.map(input => input.addEventListener('keyup', e => {
-      if(input.id.endsWith('Name'))
-        if(3 + input.value.length > input.size)
-          input.size = 3 + input.value.length;
-      e.target.setCustomValidity('');
-      if(!e.target.reportValidity())
-        e.target.setCustomValidity(`name cannot be ${e.target.value}`);
-    }, {signal: outerContext.abortControler.signal}));  
-    Object.defineProperty(this[key], 'value', {
-      get: function(){
-        return this.el.value
-      },
-      set: function(value){
-        return this.el.value = value
-      },
-      configurable: true,
-      enumerable: false,
-    });
-  }
-console.log(`resetting this.`, Object.keys(this))
-  this.reset(node);
-console.log(`constructed PageControls `, this);
-}
 
 class CKE5_Page extends Encrypted_Node {
   #bottomBar; #editorEl;
@@ -332,7 +77,7 @@ console.log(`creating page select option ${page.name}, value ${page.cid.toString
       opts.unshift(pageOption);
       return Promise.resolve();
     }
-    if(CKE5_Page.blockParameters.traverse.value)
+    if(this.blockParameters.traverse.value)
       await this.traverse(root.cid, populateSelectOption, keys);
     else
       populateSelectOption(root, 0);
@@ -366,7 +111,7 @@ console.log(`creating page select option ${page.name}, value ${page.cid.toString
     default:
       var keys = await signingAccount.keys.readFrom(this.blockParameters.inKeys.value);
     }
-    if(window?.collab)
+    if(window?.collab && window.collab?.bottomBar)
       window.collab.bottomBar.abortControler.abort(); // strip event listeners from page control elements
     try {
       if(address){
@@ -413,7 +158,7 @@ console.log(`creating page select option ${page.name}, value ${page.cid.toString
     node.pageLinks.render();
     this.readOnlyMode(true);
     if(node.parents.length === 0){
-      node.#bottomBar.editingRoot.value = `${node.cid.toString().slice(0,7)}...${node.cid.toString().slice(-7)}`;
+      node.#bottomBar.editingRoot.value = node.cid.toString();//`${node.cid.toString().slice(0,7)}...${node.cid.toString().slice(-7)}`;
       node.#bottomBar.homeButton.value = node.cid.toString();
       if(this.blockParameters.traverse.value)
         this.mapPages(node, await node.signingAccount.keys.readFrom(this.blockParameters.inKeys.value), node.cid.toString());
@@ -436,18 +181,20 @@ console.log(`creating page select option ${page.name}, value ${page.cid.toString
       value.colName = this.#bottomBar.newName.value;
     value = this.pageLinks.update(value);
     value.editorContents = editor.getData();
-    const keys = await this.signingAccount.keys.writeTo(this.#bottomBar.inkeys.value);
-console.log(`encrypting for ${this.#bottomBar.inkeys.value} with keys `, keys);
+    const keys = await this.signingAccount.keys.writeTo(CKE5_Page.blockParameters.inKeys.value);
+console.log(`encrypting for ${CKE5_Page.blockParameters.inKeys.value} with keys `, keys);
     return this.update(value, keys).then(async root => {
+console.log(`${this.name} bubbled up to ${root.name}`, root);
       this.#bottomBar.reset(this);
       this.#bottomBar.editingRoot.reset(root);
-      CKE5_Page.persist(root, keys);
-      CKE5_Page.mapPages(
+      await CKE5_Page.persist(root, keys);
+      await CKE5_Page.mapPages(
         root, await this.signingAccount.keys.readFrom('self'), 
         this.cid.toString()
       );
     })
   }
 }
+setPageClass(CKE5_Page);
 window.CKE5_Page = CKE5_Page; // delete this after debug
 export {CKE5_Page};

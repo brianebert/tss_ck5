@@ -184,10 +184,22 @@ function BlockParameters(queryParameters){
 CKE5_Page.blockParameters = new BlockParameters(queryParameters);
 CKE5_Page.openPage(sourceAccount);
 
-for(const [key, value] of Object.entries(localStorage)){
-	let keys = null;
-	if(key.startsWith('bafk'))
-		keys = await sourceAccount.keys.readFrom('self');
-	const page = await CKE5_Page.fromCID(sourceAccount, key, keys);
-	console.log(`${key} is named ${page.name}`);
+window.checkForTestPages = function(pages){
+	for(const [address, name] of lsNames)
+		if(pages.includes(name))
+			console.log(`${address} is named ${name}`);
 }
+
+window.getAllPages = async function(){
+	window.lsNames = []; // localStorage entry names
+	for(const [key, value] of Object.entries(localStorage)){
+		let keys = null;
+		if(key.startsWith('bafk'))
+			keys = await sourceAccount.keys.readFrom('self');
+		const page = await CKE5_Page.fromCID(sourceAccount, key, keys);
+		console.log(`${key} is named ${page.name}`);
+		lsNames.push([key, page.name]);
+	}
+}
+
+window.getAllPages()
