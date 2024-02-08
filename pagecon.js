@@ -41,21 +41,6 @@ function PageControls(node){
         this.el.value = `${node.cid.toString().slice(0,HASH_SLICE)}...${node.cid.toString().slice(-HASH_SLICE)}`;
     }
   };
-  this.oldName = {
-    reset: function(node){
-      this.el.value = node.name.length ? node.name : 'unnamed';
-    }
-  };
-  this.newName = {
-    reset: function(){
-      this.el.value = '';
-      //this.el.replaceWith(this.el.cloneNode(true));
-      this.el.addEventListener('change', e => {
-        if(e.target.value.length)
-          PageClass.startAutosave();
-      }, {signal: outerContext.abortControler.signal});
-    }
-  };
   this.pageSelect = {
     reset: function(node){
       //this.el.replaceWith(this.el.cloneNode(true));
@@ -122,6 +107,7 @@ function PageControls(node){
       this.el.value = '';
       //this.el.replaceWith(this.el.cloneNode(true));
       this.el.addEventListener('change', async e => {
+        PageClass.blockParameters.traverse.value = false;
         if(e.target.value.length > 0){
           const page = await PageClass.openPage(node.signingAccount, null, e.target.value);
           //await this.mapPages(page) // keys, selectValue not needed since only will create the one option
@@ -135,8 +121,10 @@ function PageControls(node){
       this.el.value = '';
       //this.el.replaceWith(this.el.cloneNode(true));
       this.el.addEventListener('change', e => {
-        if(e.target.value.length > 0 && outerContext.linkAddress.value.length > 0)
-          tryToLink(node, e.target.value, outerContext.linkAddress.value)
+        if(e.target.value.length > 0 && outerContext.linkAddress.value.length > 0){
+          tryToLink(node, e.target.value, outerContext.linkAddress.value);
+          e.target.value = outerContext.linkAddress.value = '';
+        }
       }, {signal: outerContext.abortControler.signal})
     }
   };
@@ -147,7 +135,7 @@ function PageControls(node){
       this.el.addEventListener('change', e => {
         if(e.target.value.length > 0 && outerContext.linkName.value.length > 0){
           tryToLink(node, outerContext.linkName.value, e.target.value);
-          PageClass.startAutosave();
+          e.target.value = outerContext.linkName.value = '';
         }
       }, {signal: outerContext.abortControler.signal})
     }
@@ -161,7 +149,7 @@ function PageControls(node){
       this.el.addEventListener('change', e => {
         if(e.target.value.length > 0 ){
           node.pageLinks.rm(e.target.value);
-          PageClass.startAutosave();
+          PageClass.startAutosave(node);
         }
       }, {signal: outerContext.abortControler.signal})
     }  
@@ -184,6 +172,22 @@ function PageControls(node){
       }, {signal: outerContext.abortControler.signal})
     }
   };
+  this.oldName = {
+    reset: function(node){
+      this.el.value = node.name.length ? node.name : 'unnamed';
+    }
+  };
+  this.newName = {
+    reset: function(node){
+      this.el.value = '';
+      //this.el.replaceWith(this.el.cloneNode(true));
+      this.el.addEventListener('change', e => {
+        if(e.target.value.length){
+          PageClass.startAutosave(node);
+        }
+      }, {signal: outerContext.abortControler.signal});
+    }
+  };
   // tryToLink is called by linkName and linkAddress change handlers
   function tryToLink(page, name, address){
 console.log(`trying to link ${name} to ${address} on page ${page.name}`)
@@ -191,6 +195,8 @@ console.log(`trying to link ${name} to ${address} on page ${page.name}`)
       const cid = CID.parse(address);
       page.pageLinks.push(name, cid);
       page.pageLinks.render();
+      outerContext.editSelect.reset();
+      PageClass.startAutosave(page);
 //page.bottomBar.editSelect.el; Why is this here?
     } catch (err) {
       console.error(`caught error linking pages ${page.cid.toString()} and ${address} with name ${name}`, err);

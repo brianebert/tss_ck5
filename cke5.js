@@ -2,6 +2,9 @@ import {Encrypted_Node} from '@brianebert/tss';
 import {PageControls, setPageClass} from './pagecon.js';
 import {CK_Editor} from './editor.js';
 
+//const HASH_SLICE = 10;
+
+
 class CKE5_Page extends Encrypted_Node {
   #bottomBar; #editorEl;
   constructor(){
@@ -118,16 +121,19 @@ console.log(`creating page select option ${page.name}, value ${page.cid.toString
   console.log(`reading page from address ${address} with keys `, keys);
         window.collab = await this.fromCID(signingAccount, address, keys);
       }
-      else {
+      else { // open welcome page
   console.log(`creating page ${name} using signingAccount `, signingAccount);
         const prompt0 = `<h1>Welcome!</h1><p>to get started, enter or choose "<span style="color:hsl(0, 0%, 60%);">Document Address</span>`;
         const prompt1 = `" at the upper left then click "<b>read</b>," or click "<b>Edit Document</b>" on the lower right</p>`;
-        window.collab = new this({colName: name, editorContents: prompt0 + prompt1}, signingAccount);
+        const prompt2 = `<p>This page will not be saved unless you edit it!</p>`;
+        window.collab = new this({colName: name, editorContents: prompt0 + prompt1 + prompt2}, signingAccount);
         await window.collab.ready;
   console.log(`created page ${window.collab.name} `, window.collab);
       }
       await this.refreshPageview(window.collab);
-      console.log(`${window.collab.name}'s subpage links are: `, window.collab.links);
+      // the next two lines for debugging
+      const subPages = Object.fromEntries(Object.entries(window.collab.links).map(([key, cid]) => [key, cid.toString()]));
+      console.log(`${window.collab.name}'s subpage links are: `, subPages);
       return window.collab
     } catch (err) {
       console.error(`error opening ${address}`, err);
@@ -157,20 +163,23 @@ console.log(`creating page select option ${page.name}, value ${page.cid.toString
     node.pageLinks.links = node.links;
     node.pageLinks.render();
     this.readOnlyMode(true);
-    if(node.parents.length === 0){
-      node.#bottomBar.editingRoot.value = node.cid.toString();//`${node.cid.toString().slice(0,7)}...${node.cid.toString().slice(-7)}`;
-      node.#bottomBar.homeButton.value = node.cid.toString();
-      if(this.blockParameters.traverse.value)
-        this.mapPages(node, await node.signingAccount.keys.readFrom(this.blockParameters.inKeys.value), node.cid.toString());
-      else
-        this.mapPages(node);
+    if(!this.blockParameters.traverse.value){
+      node.#bottomBar.editingRoot.value = 'accessed no traverse';
+      await this.mapPages(node);
     }
+    else // this.blockParameters.traverse.value = true
+      if(node.parents.length === 0){
+        node.#bottomBar.editingRoot.reset(node); // there are no listeners on editingRoot
+        node.#bottomBar.homeButton.reset(node); // calling reset() operates homeButton AbortController
+        await this.mapPages(node, await node.signingAccount.keys.readFrom(this.blockParameters.inKeys.value), node.cid.toString());
+      }
     window.scroll(0,0);    
   }
 
-  static startAutosave(){
+  static startAutosave(node){
     // Any comment will trigger CKEditor5 autosave and is stripped too!
-    window.editor.setData('<!-- -->' + window.editor.getData())
+    window.editor.setData('<!-- -->' + window.editor.getData());
+    node.ephemeral = true;
   }
 
   // do not call directly. It will be called by the Editor's autosave module.
@@ -185,13 +194,10 @@ console.log(`creating page select option ${page.name}, value ${page.cid.toString
 console.log(`encrypting for ${CKE5_Page.blockParameters.inKeys.value} with keys `, keys);
     return this.update(value, keys).then(async root => {
 console.log(`${this.name} bubbled up to ${root.name}`, root);
-      this.#bottomBar.reset(this);
+      await CKE5_Page.refreshPageview(this);
       this.#bottomBar.editingRoot.reset(root);
+      this.#bottomBar.homeButton.reset(root);
       await CKE5_Page.persist(root, keys);
-      await CKE5_Page.mapPages(
-        root, await this.signingAccount.keys.readFrom('self'), 
-        this.cid.toString()
-      );
     })
   }
 }

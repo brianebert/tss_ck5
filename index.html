@@ -143,7 +143,7 @@
 					</span>
 				</div>
 				<div>
-					<span>
+					<span id="navigationElements">
 						<span>
 						<label for="pageSelect">Select Page:</label>
 						<select id="pageSelect" style="font-weight: bold;" disabled></select>
@@ -157,7 +157,7 @@
 							<span id="subPages"/>
 						</span>
 					</span>
-					<span style="float: right;">
+					<span id="pageLinkingElements" style="float: right;">
 						<span>
 							<button id="editButton" type="button">Edit Document</button>
 						</span>
@@ -186,6 +186,7 @@
 							<span id="unlinkPage" class="documentEdits" hidden>
 								<input id="unlinkName" type="text" placeholder="UNLINK NAME" pattern="^((?!up|UP|Up|home|Home|HOME).)*$"
 											 style="font-size:inherit; border: inherit; outline: inherit;"/>
+								<datalist id="unlinkNames"></datalist>
 							</span>
 							<span id="rmPage" class="documentEdits" style="border: none;outline: none;" hidden>
 								<input id="rmAddress" type="text" size="60" placeholder="ADDRESS"

@@ -95,6 +95,12 @@ function BlockParameters(queryParameters){
         Object.defineProperty(this, 'value', {
           get: function(){
             return !!parseInt(this.el.value)
+          },
+          set: function(val){
+          	if(val)
+          		this.el.value = '1';
+          	else
+          		this.el.value = '0';
           }
         });
       }
