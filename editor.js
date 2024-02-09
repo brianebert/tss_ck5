@@ -22,6 +22,7 @@ function displayStatus( editor, statusEl ) {
     });
     // adds and removes beforeUnloadListener, indicating status on element passed
     pendingActions.on( 'change:hasAny', ( evt, propertyName, newValue ) => {
+console.log(`pendingActions change:hasAny called with `, evt, propertyName, newValue);
       if ( newValue ) {
         console.log(`detected editor content change at: ${new Date()}`);
         window.addEventListener('beforeunload', beforeUnloadListener, {capture: true});

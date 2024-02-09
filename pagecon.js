@@ -23,7 +23,7 @@ function PageControls(node){
     reset: function(){
       this.el.addEventListener('click', async function(e){
         const autoSave = window.editor.plugins.get('Autosave');
-        console.log(`autoSave is: `, autoSave);
+        console.log(`autoSave.state is:  ${autoSave.state}`);
         if(autoSave.state === 'waiting')
           await autoSave.save(window.editor);
         PageClass.readOnlyMode(true);        

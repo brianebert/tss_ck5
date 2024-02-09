@@ -60,6 +60,11 @@ class CKE5_Page extends Encrypted_Node {
     this.blockParameters = params;
   }
 
+  static async copy(str){
+    return this.read(str, )
+
+  }
+
   static async mapPages(root, keys, selectValue){
 console.log(`populating page selector for ${root.name} with ${selectValue} selected.`);
     const subPageLinks = Array.from(document.getElementById('subPages').children);
@@ -164,13 +169,16 @@ console.log(`creating page select option ${page.name}, value ${page.cid.toString
     node.pageLinks.render();
     this.readOnlyMode(true);
     if(!this.blockParameters.traverse.value){
-      node.#bottomBar.editingRoot.value = 'accessed no traverse';
+      this.blockParameters.copyIt.el.value = node.cid.toString();
+console.log(`have set value ${this.blockParameters.copyIt.el.value} on `, this.blockParameters.copyIt.el);
       await this.mapPages(node);
     }
     else // this.blockParameters.traverse.value = true
       if(node.parents.length === 0){
         node.#bottomBar.editingRoot.reset(node); // there are no listeners on editingRoot
         node.#bottomBar.homeButton.reset(node); // calling reset() operates homeButton AbortController
+        this.blockParameters.copyIt.el.value = node.cid.toString();
+console.log(`have set value ${this.blockParameters.copyIt.el.value} on `, this.blockParameters.copyIt.el);
         await this.mapPages(node, await node.signingAccount.keys.readFrom(this.blockParameters.inKeys.value), node.cid.toString());
       }
     window.scroll(0,0);    
@@ -194,9 +202,10 @@ console.log(`creating page select option ${page.name}, value ${page.cid.toString
 console.log(`encrypting for ${CKE5_Page.blockParameters.inKeys.value} with keys `, keys);
     return this.update(value, keys).then(async root => {
 console.log(`${this.name} bubbled up to ${root.name}`, root);
-      await CKE5_Page.refreshPageview(this);
+      this.#bottomBar.editingPage.reset(this);
       this.#bottomBar.editingRoot.reset(root);
       this.#bottomBar.homeButton.reset(root);
+      await CKE5_Page.mapPages(root, await root.signingAccount.keys.readFrom(CKE5_Page.blockParameters.inKeys.value), this.cid.toString());
       await CKE5_Page.persist(root, keys);
     })
   }

@@ -41,7 +41,6 @@ function BlockParameters(queryParameters){
   this.source = {
       init: function(queryParameters, blockParameters){
         this.el.addEventListener('change', function(e){
-          console.log(`have set source to ${e.target.value}`);
           document.getElementById('addresses').innerHTML = '';
           if(e.target.value === 'localStorage'){
             for(const key of Object.keys(localStorage))
@@ -52,6 +51,8 @@ function BlockParameters(queryParameters){
             CKE5_Page.source.url = (cid) => `https://motia.infura-ipfs.io/ipfs/${cid.toString()}/`;
           else
             console.error(`oops, didn't expect to be here`);
+          console.log(`have set source url to ${CKE5_Page.source.url}`);
+          blockParameters.copyIt.el.disabled = e.target.value === blockParameters.sink.value;
         })
       }
     };
@@ -71,7 +72,7 @@ function BlockParameters(queryParameters){
       }
     };
   this.sink = {
-      init: function(){
+      init: function(queryParameters, blockParameters){
         this.el.addEventListener('change', function(e){
           if(e.target.value === 'ipfs')
             CKE5_Page.sink.url = (cid) => typeof cid === 'string' ? `https://motia.com/api/v1/ipfs/pin/add?arg=${cid}` :
@@ -79,6 +80,7 @@ function BlockParameters(queryParameters){
            else
             CKE5_Page.sink.url = false;
           console.log(`have set sink url to: `, CKE5_Page.sink.url);
+          blockParameters.copyIt.el.disabled = e.target.value === blockParameters.source.value;
         })
       }
     };
@@ -148,11 +150,19 @@ function BlockParameters(queryParameters){
     init: function(queryParameters, blockParameters){
       this.el.addEventListener('click', function(e){
         CKE5_Page.openPage(sourceAccount, blockParameters.addressInput.value);
-        //blockParameters.dataEntryLabel.el.value = '';
-        //blockParameters.addressInput.el.value = '';
       })
     }
   };
+  this.copyIt = {
+  	init: function(queryParameters, blockParameters){
+  		this.el.disabled = blockParameters.source.value === blockParameters.sink.value;
+  		this.el.addEventListener('click', async function(e){
+  			console.log(`Now is the time to copy ${CKE5_Page.blockParameters.traverse.value?'all pages of':''} ${e.target.value} to ${CKE5_Page.blockParameters.sink.value}!`);
+        const root = await CKE5_Page.openPage(sourceAccount, e.target.value);
+        console.log(`copyIt opened root `, root);
+  		})
+  	}
+  }
   Object.defineProperty(this, 'persistAll', {
     get: () => {
       console.log(`persist all of this? `, this);
@@ -162,8 +172,9 @@ function BlockParameters(queryParameters){
       	'1': inKeys.value !== outKeys.value,
       	'2': traverse.value
       }
-      console.log(`persistAll is ${sink.value !== source.value || inKeys.value !== outKeys.value && traverse.value} with `, truther);
-      return sink.value !== source.value || inKeys.value !== outKeys.value && traverse.value
+      //console.log(`persistAll is ${sink.value !== source.value || inKeys.value !== outKeys.value && traverse.value} with `, truther);
+      console.log(`persistAll is ${traverse.value && sink.value !== source.value} with `, truther);
+      return sink.value !== source.value // || inKeys.value !== outKeys.value && 
     }
   });
 
