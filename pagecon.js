@@ -108,6 +108,7 @@ function PageControls(node){
       //this.el.replaceWith(this.el.cloneNode(true));
       this.el.addEventListener('change', async e => {
         PageClass.blockParameters.traverse.value = false;
+        //PageClass.blockParameters.traverse.el.dispatchEvent(new Event('change'));
         if(e.target.value.length > 0){
           const page = await PageClass.openPage(node.signingAccount, null, e.target.value);
           //await this.mapPages(page) // keys, selectValue not needed since only will create the one option
@@ -159,6 +160,8 @@ function PageControls(node){
       this.el.value = '';
       //this.el.replaceWith(this.el.cloneNode(true));
       this.el.addEventListener('change', e => {
+        PageClass.blockParameters.traverse.value = false;
+        //PageClass.blockParameters.traverse.el.dispatchEvent(new Event('change'));
         if(e.target.value.length){
           const addressInputOption = Array.from(document.getElementById('addresses').children)
                                           .filter(child => child.value === e.target.value);

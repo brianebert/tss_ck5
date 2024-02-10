@@ -60,11 +60,6 @@ class CKE5_Page extends Encrypted_Node {
     this.blockParameters = params;
   }
 
-  static async copy(str){
-    return this.read(str, )
-
-  }
-
   static async mapPages(root, keys, selectValue){
 console.log(`populating page selector for ${root.name} with ${selectValue} selected.`);
     const subPageLinks = Array.from(document.getElementById('subPages').children);
@@ -187,7 +182,7 @@ console.log(`have set value ${this.blockParameters.copyIt.el.value} on `, this.b
   static startAutosave(node){
     // Any comment will trigger CKEditor5 autosave and is stripped too!
     window.editor.setData('<!-- -->' + window.editor.getData());
-    node.ephemeral = true;
+    //node.ephemeral = true; GETTING RID OF ephemeral nodes
   }
 
   // do not call directly. It will be called by the Editor's autosave module.
@@ -205,8 +200,9 @@ console.log(`${this.name} bubbled up to ${root.name}`, root);
       this.#bottomBar.editingPage.reset(this);
       this.#bottomBar.editingRoot.reset(root);
       this.#bottomBar.homeButton.reset(root);
+      CKE5_Page.blockParameters.copyIt.el.value = this.cid.toString();
       await CKE5_Page.mapPages(root, await root.signingAccount.keys.readFrom(CKE5_Page.blockParameters.inKeys.value), this.cid.toString());
-      await CKE5_Page.persist(root, keys);
+      //await CKE5_Page.persist(root, keys);
     })
   }
 }

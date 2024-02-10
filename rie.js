@@ -52,7 +52,8 @@ function BlockParameters(queryParameters){
           else
             console.error(`oops, didn't expect to be here`);
           console.log(`have set source url to ${CKE5_Page.source.url}`);
-          blockParameters.copyIt.el.disabled = e.target.value === blockParameters.sink.value;
+          blockParameters.sink.el.value = e.target.value;
+          blockParameters.copyIt.el.disabled = true;
         })
       }
     };
@@ -158,8 +159,13 @@ function BlockParameters(queryParameters){
   		this.el.disabled = blockParameters.source.value === blockParameters.sink.value;
   		this.el.addEventListener('click', async function(e){
   			console.log(`Now is the time to copy ${CKE5_Page.blockParameters.traverse.value?'all pages of':''} ${e.target.value} to ${CKE5_Page.blockParameters.sink.value}!`);
-        const root = await CKE5_Page.openPage(sourceAccount, e.target.value);
-        console.log(`copyIt opened root `, root);
+        const inKeys = await sourceAccount.keys.readFrom(CKE5_Page.blockParameters.inKeys.value);
+        const outKeys = await sourceAccount.keys.writeTo(CKE5_Page.blockParameters.outKeys.value);
+        ///const root = await CKE5_Page.fromCID(sourceAccount, e.target.value);
+//console.log(`copied copy root:  `, root);
+        return CKE5_Page.copy(sourceAccount, e.target.value, inKeys, outKeys, CKE5_Page.blockParameters.traverse.value);
+        //const copyRoot = await CKE5_Page.fromCID(sourceAccount, e.target.value, keys);
+        //console.log(`copyIt opened root `, copyRoot);
   		})
   	}
   }
@@ -192,8 +198,9 @@ function BlockParameters(queryParameters){
       configurable: true,
       enumerable: false,
     });
-    this[key].init(queryParameters, this);
   }
+  for(const key of Object.keys(this))
+    this[key].init(queryParameters, this);
 }
 
 //CKE5_Page.topBar = new BlockParameters(queryParameters);
@@ -207,14 +214,16 @@ window.checkForTestPages = function(pages){
 			console.log(`${address} is named ${name}`);
 }
 
-window.getAllPages = async function(){
+window.getAllPages = async function(console=false){
 	window.lsNames = []; // localStorage entry names
 	for(const [key, value] of Object.entries(localStorage)){
-		let keys = null;
+		/*let keys = null;
 		if(key.startsWith('bafk'))
-			keys = await sourceAccount.keys.readFrom('self');
+			keys = await sourceAccount.keys.readFrom('self');*/
+    const keys = key.startsWith('bafk') ? await sourceAccount.keys.readFrom('self') : null;
 		const page = await CKE5_Page.fromCID(sourceAccount, key, keys);
-		console.log(`${key} is named ${page.name}`);
+    if(console)
+		  console.log(`${key} is named ${page.name}`);
 		lsNames.push([key, page.name]);
 	}
 }
