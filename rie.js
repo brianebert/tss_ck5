@@ -21,10 +21,11 @@ if(!Object.keys(queryParameters).length && segments.length === 2)
 
 // create a SigningAccount, with keys if user agrees to sign
 // a transaction signature is used as the key seed
-const sourceAccount = await CKE5_Page.SigningAccount.checkForWallet(queryParameters?.accountId, sourceAccountSecret);
+const sourceAccount = await CKE5_Page.SigningAccount.checkForWallet();
+console.log(`created sourceAccount: `, sourceAccount);
 await sourceAccount.ready;
-if(sourceAccount.canSign)
-  addOption('accountId', sourceAccount.id);
+//if(sourceAccount.canSign)
+addOption('accountId', sourceAccount.id);
 if(queryParameters?.accountId && queryParameters.accountId !== sourceAccount.id)
   addOption('accountId', queryParameters.accountId, true);
 
@@ -124,19 +125,22 @@ function BlockParameters(queryParameters){
         this.el.value = queryParameters.dataEntryLabel;
       this.el.placeholder = `name of hash`;
       this.el.addEventListener('change', async function(e){
-        const hash = await CKE5_Page.SigningAccount.dataEntry(blockParameters.accountId.value, e.target.value);
-        console.log(`read hash ${hash} from account ${blockParameters.accountId.value} label ${e.target.value}`);
-        blockParameters.addressInput.el.value = hash;
+        if(Array.from(document.getElementById('dataEntries').children).map(option => option.value).includes(e.target.value)){
+          const hash = await CKE5_Page.SigningAccount.dataEntry(blockParameters.accountId.value, e.target.value);
+          console.log(`read hash ${hash} from account ${blockParameters.accountId.value} label ${e.target.value}`);
+          blockParameters.addressInput.el.value = hash;
+        }
       });
     }
   };
   this.nameIt = {
     init: function(queryParameters, blockParameters){
       this.el.addEventListener('change', async function(e){
+        const bool = !!parseInt(e.target.value);
         Array.from(document.getElementsByClassName('hashName')).map(function(el){
-          el.hidden = !parseInt(e.target.value);
+          el.hidden = !bool;
         })
-        if(!!parseInt(e.target.value))
+        if(bool)
           blockParameters.accountId.el.dispatchEvent(new Event('change'));
         console.log(`blockParameters is `, blockParameters);
       });

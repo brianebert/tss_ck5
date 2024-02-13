@@ -202,7 +202,16 @@ console.log(`${this.name} bubbled up to ${root.name}`, root);
       this.#bottomBar.homeButton.reset(root);
       CKE5_Page.blockParameters.copyIt.el.value = this.cid.toString();
       await CKE5_Page.mapPages(root, await root.signingAccount.keys.readFrom(CKE5_Page.blockParameters.inKeys.value), this.cid.toString());
-      //await CKE5_Page.persist(root, keys);
+      if(this.signingAccount.canSign && CKE5_Page.blockParameters.nameIt.value){
+        const label = CKE5_Page.blockParameters.dataEntryLabel.value;
+        if(label.length)
+          this.signingAccount.setDataEntry(label, root.cid.toString())
+              .then(address => {
+                console.log(`wrote data entry ${label} : ${address} to ${this.signingAccount.id}`);
+                CKE5_Page.blockParameters.accountId.el.dispatchEvent(new Event('change'));
+                CKE5_Page.blockParameters.dataEntryLabel.el.dispatchEvent(new Event('change'));
+              })
+      }
     })
   }
 }
