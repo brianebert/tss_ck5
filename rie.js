@@ -214,7 +214,7 @@ window.checkForTestPages = function(pages){
 			console.log(`${address} is named ${name}`);
 }
 
-window.getAllPages = async function(console=false){
+window.getAllPages = async function(log=false){
 	window.lsNames = []; // localStorage entry names
 	for(const [key, value] of Object.entries(localStorage)){
 		/*let keys = null;
@@ -222,7 +222,7 @@ window.getAllPages = async function(console=false){
 			keys = await sourceAccount.keys.readFrom('self');*/
     const keys = key.startsWith('bafk') ? await sourceAccount.keys.readFrom('self') : null;
 		const page = await CKE5_Page.fromCID(sourceAccount, key, keys);
-    if(console)
+    if(log)
 		  console.log(`${key} is named ${page.name}`);
 		lsNames.push([key, page.name]);
 	}
