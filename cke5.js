@@ -153,6 +153,12 @@ console.log(`creating page select option ${page.name}, value ${page.cid.toString
     bB.editSelect.el.hidden = bB.saveButton.el.disabled = bool;
   }
 
+  static async refreshHashNameElements(address, accountId){
+    console.log(`wrote data entry ${label} : ${address} to ${accountId}`);
+    CKE5_Page.blockParameters.accountId.el.dispatchEvent(new Event('change'));
+    CKE5_Page.blockParameters.dataEntryLabel.el.dispatchEvent(new Event('change'));
+  }
+
   static async refreshPageview(node){
     console.log(`refreshing page for `, node);
     node.#bottomBar = new PageControls(node);
@@ -204,14 +210,16 @@ console.log(`${this.name} bubbled up to ${root.name}`, root);
       await CKE5_Page.mapPages(root, await root.signingAccount.keys.readFrom(CKE5_Page.blockParameters.inKeys.value), this.cid.toString());
       if(this.signingAccount.canSign && CKE5_Page.blockParameters.nameIt.value){
         const label = CKE5_Page.blockParameters.dataEntryLabel.value;
-        if(label.length)
+        if(label.length){
           this.signingAccount.setDataEntry(label, root.cid.toString())
               .then(address => {
                 console.log(`wrote data entry ${label} : ${address} to ${this.signingAccount.id}`);
                 CKE5_Page.blockParameters.accountId.el.dispatchEvent(new Event('change'));
                 CKE5_Page.blockParameters.dataEntryLabel.el.dispatchEvent(new Event('change'));
               })
-      }
+              .catch(err => console.error(`hash naming produced error: `, err))
+        }          
+      }  
     })
   }
 }

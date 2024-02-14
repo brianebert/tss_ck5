@@ -82,7 +82,10 @@ function BlockParameters(queryParameters){
            else
             CKE5_Page.sink.url = false;
           console.log(`have set sink url to: `, CKE5_Page.sink.url);
-          blockParameters.copyIt.el.disabled = e.target.value === blockParameters.source.value;
+          const copyReady = e.target.value === blockParameters.source.value;
+          blockParameters.copyIt.el.disabled = copyReady;
+          if(!copyReady)
+            blockParameters.dataEntryLabel.el.value = '';
         })
       }
     };
@@ -163,11 +166,20 @@ function BlockParameters(queryParameters){
   		this.el.disabled = blockParameters.source.value === blockParameters.sink.value;
   		this.el.addEventListener('click', async function(e){
   			console.log(`Now is the time to copy ${CKE5_Page.blockParameters.traverse.value?'all pages of':''} ${e.target.value} to ${CKE5_Page.blockParameters.sink.value}!`);
-        const inKeys = await sourceAccount.keys.readFrom(CKE5_Page.blockParameters.inKeys.value);
-        const outKeys = await sourceAccount.keys.writeTo(CKE5_Page.blockParameters.outKeys.value);
-        ///const root = await CKE5_Page.fromCID(sourceAccount, e.target.value);
-//console.log(`copied copy root:  `, root);
-        return CKE5_Page.copy(sourceAccount, e.target.value, inKeys, outKeys, CKE5_Page.blockParameters.traverse.value);
+        //const inKeys = await sourceAccount.keys.readFrom(CKE5_Page.blockParameters.inKeys.value);
+        //const outKeys = await sourceAccount.keys.writeTo(CKE5_Page.blockParameters.outKeys.value);
+        const copyOpts = {
+          signingAccount: sourceAccount,
+          address: e.target.value,
+          inKeys: await sourceAccount.keys.readFrom(CKE5_Page.blockParameters.inKeys.value),
+          outKeys: await sourceAccount.keys.writeTo(CKE5_Page.blockParameters.outKeys.value),
+          traverse: CKE5_Page.blockParameters.traverse.value,
+          dataRootLabel: 
+            blockParameters.nameIt.value ? 
+            blockParameters.dataEntryLabel.value :
+            ''
+        }
+        return CKE5_Page.copy(copyOpts);
         //const copyRoot = await CKE5_Page.fromCID(sourceAccount, e.target.value, keys);
         //console.log(`copyIt opened root `, copyRoot);
   		})
