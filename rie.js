@@ -62,7 +62,7 @@ function BlockParameters(queryParameters){
       init: function(){
         this.el.addEventListener('change', e => {
           document.getElementById('addFrom').hidden =  e.target.value !== 'add';
-          document.getElementById('addressInput').dispatchEvent(new Event('change'));
+          //document.getElementById('addressInput').dispatchEvent(new Event('change'));
         });
         document.getElementById('addFrom').addEventListener('change', e => addOption('inKeys', e.target.value));
       }
