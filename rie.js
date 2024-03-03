@@ -49,7 +49,7 @@ function BlockParameters(queryParameters){
             CKE5_Page.source.url = false;          
           }
           else if(e.target.value === 'ipfs')
-            CKE5_Page.source.url = (cid) => `https://motia.infura-ipfs.io/ipfs/${cid.toString()}/`;
+            CKE5_Page.source.url = (cid) => `https://motia.com/ipfs/${cid.toString()}/`;
           else
             console.error(`oops, didn't expect to be here`);
           console.log(`have set source url to ${CKE5_Page.source.url}`);
@@ -225,9 +225,11 @@ CKE5_Page.blockParameters = new BlockParameters(queryParameters);
 CKE5_Page.openPage(sourceAccount);
 
 window.checkForTestPages = function(pages){
-	for(const [address, name] of lsNames)
-		if(pages.includes(name))
-			console.log(`${address} is named ${name}`);
+  const found = []
+	for(const page of window.lsNames)
+		if(pages.includes(page.name))
+      found.push(page);
+  console.table(found.reduce((acc, {address, ...x}) => { acc[address] = x; return acc}, {}))
 }
 
 window.getAllPages = async function(log=false){
@@ -240,8 +242,14 @@ window.getAllPages = async function(log=false){
 		const page = await CKE5_Page.fromCID(sourceAccount, key, keys);
     if(log)
 		  console.log(`${key} is named ${page.name}`);
-		lsNames.push([key, page.name]);
+		window.lsNames.push({
+      address: key, name: page.name,  
+      created: page.value?.created_at, 
+      modified: page.value?.modified_at, 
+      updated: page.value?.updated_at
+    });
 	}
+  console.table(window.lsNames.reduce((acc, {address, ...x}) => { acc[address] = x; return acc}, {}))
 }
 
 window.getAllPages()
