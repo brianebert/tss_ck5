@@ -54,14 +54,16 @@ function BlockParameters(queryParameters){
             console.error(`oops, didn't expect to be here`);
           console.log(`have set source url to ${CKE5_Page.source.url}`);
           blockParameters.sink.el.value = e.target.value;
-          blockParameters.copyIt.el.disabled = true;
+          blockParameters.copyIt.el.disabled = blockParameters.inKeys.value === blockParameters.outKeys.value;
         })
       }
     };
   this.inKeys = {
-      init: function(){
+      init: function(queryParameters, blockParameters){
         this.el.addEventListener('change', e => {
           document.getElementById('addFrom').hidden =  e.target.value !== 'add';
+          blockParameters.copyIt.el.disabled = blockParameters.inKeys.value === blockParameters.outKeys.value &&
+                                               blockParameters.source.value === blockParameters.sink.value;
           //document.getElementById('addressInput').dispatchEvent(new Event('change'));
         });
         document.getElementById('addFrom').addEventListener('change', e => addOption('inKeys', e.target.value));
@@ -90,9 +92,11 @@ function BlockParameters(queryParameters){
       }
     };
   this.outKeys = {
-      init: function(){
+      init: function(queryParameters, blockParameters){
         this.el.addEventListener('change', e => {
           document.getElementById('addTo').hidden = e.target.value !== 'add';
+          blockParameters.copyIt.el.disabled = blockParameters.inKeys.value === blockParameters.outKeys.value &&
+                                               blockParameters.source.value === blockParameters.sink.value;
         });
         document.getElementById('addTo').addEventListener('change', e => addOption('outKeys', e.target.value));
       }
@@ -222,6 +226,9 @@ function BlockParameters(queryParameters){
 //CKE5_Page.topBar = new BlockParameters(queryParameters);
 //CKE5_Page.blockParameters = CKE5_Page.topBar;
 CKE5_Page.blockParameters = new BlockParameters(queryParameters);
+console.log(`calling CKE5_Page.openPage with CKE5_Page.blockParameters set to `, CKE5_Page.blockParameters);
+console.log(`typeof CKE5_Page.blockParameters is ${typeof CKE5_Page.blockParameters}`);
+console.log(`typeof Encrypted_Node.blockParameters is ${typeof Encrypted_Node.blockParameters}`);
 CKE5_Page.openPage(sourceAccount);
 
 window.checkForTestPages = function(pages){

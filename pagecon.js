@@ -2,12 +2,6 @@ import { CID } from 'multiformats/cid';
 
 const HASH_SLICE = 10;
 
-let PageClass;
-
-function setPageClass(c){
-  PageClass = c;
-}
-
 // addOption is a utility function for constructing option lists for the ui
 function addOption(elId, value, selected=false, label=true){
   const option = document.createElement('option');
@@ -18,6 +12,7 @@ function addOption(elId, value, selected=false, label=true){
 }
 
 function PageControls(node){
+  const PageClass = node.constructor;
   const outerContext = this;
   this.saveButton = {
     reset: function(){
@@ -256,4 +251,4 @@ console.log(`resetting this.`, Object.keys(this))
 console.log(`constructed PageControls `, this);
 }
 
-export {PageControls, setPageClass};
+export {PageControls};

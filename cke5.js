@@ -1,5 +1,5 @@
 import {Encrypted_Node} from '@brianebert/tss';
-import {PageControls, setPageClass} from './pagecon.js';
+import {PageControls} from './pagecon.js';
 import {CK_Editor} from './editor.js';
 
 //const HASH_SLICE = 10;
@@ -8,6 +8,9 @@ import {CK_Editor} from './editor.js';
 class CKE5_Page extends Encrypted_Node {
   #bottomBar; #editorEl;
   constructor(){
+console.log(`constructing CKE5_Page with blockParameters = `, CKE5_Page.blockParameters);
+    if(CKE5_Page.blockParameters.constructor.name !== "BlockParameters")
+      throw new Error(`Must set CKE5_Page.blockParameters to BlockParameters`)
     super(...arguments);
     // element editor uses
     this.#editorEl = document.querySelector('.editor');
@@ -17,7 +20,7 @@ class CKE5_Page extends Encrypted_Node {
       onclick: e => CKE5_Page.openPage(this.signingAccount, e.target.value),
       push: function(key, value){
         if(Object.keys(this.links).includes(key) || Object.values(this.links).includes(value))
-          throw new Error(`cannot set new link from ${key} or to ${value}`)
+          throw new Error(`cannot set new link from ${key} to ${value}`)
         this.links[key] = value;
       },
       render: function(){
@@ -56,9 +59,7 @@ class CKE5_Page extends Encrypted_Node {
     return this.#bottomBar
   }
 
-  static set params(params){
-    this.blockParameters = params;
-  }
+  static blockParameters;
 
   static async mapPages(root, keys, selectValue){
 console.log(`populating page selector for ${root.name} with ${selectValue} selected.`);
@@ -155,8 +156,8 @@ console.log(`creating page select option ${page.name}, value ${page.cid.toString
 
   static async refreshHashNameElements(address, accountId){
     console.log(`wrote data entry ${label} : ${address} to ${accountId}`);
-    CKE5_Page.blockParameters.accountId.el.dispatchEvent(new Event('change'));
-    CKE5_Page.blockParameters.dataEntryLabel.el.dispatchEvent(new Event('change'));
+    this.blockParameters.accountId.el.dispatchEvent(new Event('change'));
+    this.blockParameters.dataEntryLabel.el.dispatchEvent(new Event('change'));
   }
 
   static async refreshPageview(node){
@@ -223,6 +224,6 @@ console.log(`${this.name} bubbled up to ${root.name}`, root);
     })
   }
 }
-setPageClass(CKE5_Page);
+//setPageClass(CKE5_Page);
 window.CKE5_Page = CKE5_Page; // delete this after debug
 export {CKE5_Page};
