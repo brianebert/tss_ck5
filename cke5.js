@@ -115,8 +115,10 @@ console.log(`creating page select option ${page.name}, value ${page.cid.toString
     default:
       var keys = await signingAccount.keys.readFrom(this.blockParameters.inKeys.value);
     }
-    if(window?.collab && window.collab?.bottomBar)
-      window.collab.bottomBar.abortControler.abort(); // strip event listeners from page control elements
+    if(window?.collab && window.collab?.bottomBar){
+      var homeButton = window.collab.bottomBar.removeListeners(); // strip event listeners from page control elements
+console.log(`removeListeners has returned homeButton: `, homeButton);
+    }
     try {
       if(address){
   console.log(`reading page from address ${address} with keys `, keys);
@@ -131,10 +133,11 @@ console.log(`creating page select option ${page.name}, value ${page.cid.toString
         await window.collab.ready;
   console.log(`created page ${window.collab.name} `, window.collab);
       }
-      await this.refreshPageview(window.collab);
+      await this.refreshPageview(window.collab, homeButton);
       // the next two lines for debugging
       const subPages = Object.fromEntries(Object.entries(window.collab.links).map(([key, cid]) => [key, cid.toString()]));
       console.log(`${window.collab.name}'s subpage links are: `, subPages);
+
       return window.collab
     } catch (err) {
       console.error(`error opening ${address}`, err);
@@ -160,8 +163,9 @@ console.log(`creating page select option ${page.name}, value ${page.cid.toString
     this.blockParameters.dataEntryLabel.el.dispatchEvent(new Event('change'));
   }
 
-  static async refreshPageview(node){
+  static async refreshPageview(node, homeButton=null){
     console.log(`refreshing page for `, node);
+console.log(`with homeButton: `, homeButton);
     node.#bottomBar = new PageControls(node);
     if(Object.hasOwn(window, 'editor'))
       window.editor.destroy();
@@ -176,12 +180,17 @@ console.log(`have set value ${this.blockParameters.copyIt.el.value} on `, this.b
       await this.mapPages(node);
     }
     else // this.blockParameters.traverse.value = true
-      if(node.parents.length === 0){
-        node.#bottomBar.editingRoot.reset(node); // there are no listeners on editingRoot
-        node.#bottomBar.homeButton.reset(node); // calling reset() operates homeButton AbortController
+      if(node.parents.length === 0 && homeButton?.value !== node.cid.toString()){
+        node.#bottomBar.editingRoot.reset(node);
+        node.#bottomBar.homeButton.reset(node);
         this.blockParameters.copyIt.el.value = node.cid.toString();
 console.log(`have set value ${this.blockParameters.copyIt.el.value} on `, this.blockParameters.copyIt.el);
         await this.mapPages(node, await node.signingAccount.keys.readFrom(this.blockParameters.inKeys.value), node.cid.toString());
+      }
+      else {
+console.log(`setting homeButton: `, homeButton);
+console.log(`on bottomBar: `, bottomBar);
+        node.#bottomBar.homeButton = homeButton;
       }
     window.scroll(0,0);    
   }
@@ -207,6 +216,7 @@ console.log(`${this.name} bubbled up to ${root.name}`, root);
       this.#bottomBar.editingPage.reset(this);
       this.#bottomBar.editingRoot.reset(root);
       this.#bottomBar.homeButton.reset(root);
+      this.#bottomBar.upButton.reset(this);
       CKE5_Page.blockParameters.copyIt.el.value = this.cid.toString();
       await CKE5_Page.mapPages(root, await root.signingAccount.keys.readFrom(CKE5_Page.blockParameters.inKeys.value), this.cid.toString());
       if(this.signingAccount.canSign && CKE5_Page.blockParameters.nameIt.value){

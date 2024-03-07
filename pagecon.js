@@ -51,24 +51,28 @@ function PageControls(node){
     }
   };
   this.homeButton = {
+    resetFn: e => PageClass.openPage(node.signingAccount, e.target.value),
     reset: function(node){
-      if(PageClass.blockParameters.traverse.value && !node.parents.length){
-        if(this?.abortControler)
+console.log(`have homeButton reset, running with this: `, this);
+      if(PageClass.blockParameters.traverse.value){
+        if(Object.hasOwn(this, 'abortControler'))
           this.abortControler.abort();
         this.abortControler = new AbortController();
+        this.el.value = node.cid.toString();
         this.el.addEventListener(
           'click',
-          e => PageClass.openPage(node.signingAccount, node.cid.toString()),
+          e => PageClass.openPage(node.signingAccount, e.target.value),
           {signal: this.abortControler.signal}
         )
       }
-      this.el.disabled = !node.parents.length || !PageClass.blockParameters.traverse.value;
+      //this.el.disabled = !PageClass.blockParameters.traverse.value;
+console.warn(`have reset homeButton: `, this.el);
     }
   };
   this.upButton = {
     reset: function(node){
       //this.el.replaceWith(this.el.cloneNode(true));
-      this.el.disabled = !node.parents.length;
+      outerContext.homeButton.el.disabled = this.el.disabled = !node.parents.length || !PageClass.blockParameters.traverse.value;
       if(node.parents.length > 0){
         this.el.value = node.parents[0].cid.toString();
         this.el.addEventListener(
@@ -214,10 +218,20 @@ console.log(`trying to link ${name} to ${address} on page ${page.name}`)
     configurable: false,
     enumerable: false
   });
+  Object.defineProperty(this, 'removeListeners', {
+    value: function (){
+      this.abortControler.abort();
+console.log(`removeListeners will return homeButton: `, this.homeButton);
+      return this.homeButton
+    },
+    configurable: false,
+    enumerable: false
+  });
   Object.defineProperty(this, 'reset', {
     value: function(node){
       for(const [key, value] of Object.entries(this))
-        value.reset(node);
+        if(key !== 'homeButton')
+          value.reset(node);
       return this
     },
     configurable: false,
