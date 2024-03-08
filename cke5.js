@@ -164,6 +164,13 @@ console.log(`removeListeners has returned homeButton: `, homeButton);
   }
 
   static async refreshPageview(node, homeButton=null){
+    const title = document.title.split(':');
+    if(title[0] === node.name)
+      document.title = node.name;
+    else {
+      title[1] = node.name;
+      document.title = title.join(':');
+    }
     console.log(`refreshing page for `, node);
 console.log(`with homeButton: `, homeButton);
     node.#bottomBar = new PageControls(node);
@@ -175,12 +182,14 @@ console.log(`with homeButton: `, homeButton);
     node.pageLinks.render();
     this.readOnlyMode(true);
     if(!this.blockParameters.traverse.value){
+      document.title = node.name;
       this.blockParameters.copyIt.el.value = node.cid.toString();
 console.log(`have set value ${this.blockParameters.copyIt.el.value} on `, this.blockParameters.copyIt.el);
       await this.mapPages(node);
     }
     else // this.blockParameters.traverse.value = true
       if(node.parents.length === 0 && homeButton?.value !== node.cid.toString()){
+        document.title = node.name;
         node.#bottomBar.editingRoot.reset(node);
         node.#bottomBar.homeButton.reset(node);
         this.blockParameters.copyIt.el.value = node.cid.toString();
