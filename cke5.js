@@ -8,7 +8,7 @@ import {CK_Editor} from './editor.js';
 class CKE5_Page extends Encrypted_Node {
   #bottomBar; #editorEl;
   constructor(){
-console.log(`constructing CKE5_Page with blockParameters = `, CKE5_Page.blockParameters);
+//console.log(`constructing CKE5_Page with blockParameters = `, CKE5_Page.blockParameters);
     if(CKE5_Page.blockParameters.constructor.name !== "BlockParameters")
       throw new Error(`Must set CKE5_Page.blockParameters to BlockParameters`)
     super(...arguments);
@@ -126,6 +126,7 @@ console.log(`removeListeners has returned homeButton: `, homeButton);
       }
       else { // open welcome page
   console.log(`creating page ${name} using signingAccount `, signingAccount);
+        document.title = 'Welcome!';
         const prompt0 = `<h1>Welcome!</h1><p>to get started, enter or choose "<span style="color:hsl(0, 0%, 60%);">Document Address</span>`;
         const prompt1 = `" at the upper left then click "<b>read</b>," or click "<b>Edit Document</b>" on the lower right</p>`;
         const prompt2 = `<p>This page will not be saved unless you edit it!</p>`;

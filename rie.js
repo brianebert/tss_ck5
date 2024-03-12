@@ -231,12 +231,14 @@ console.log(`typeof CKE5_Page.blockParameters is ${typeof CKE5_Page.blockParamet
 console.log(`typeof Encrypted_Node.blockParameters is ${typeof Encrypted_Node.blockParameters}`);
 CKE5_Page.openPage(sourceAccount);
 
-window.checkForTestPages = function(pages){
+window.checkForTestPages = async function(pages){
+  await window.getAllPages();
   const found = []
 	for(const page of window.lsNames)
 		if(pages.includes(page.name))
       found.push(page);
   console.table(found.reduce((acc, {address, ...x}) => { acc[address] = x; return acc}, {}))
+  return found
 }
 
 window.getAllPages = async function(log=false){
@@ -247,8 +249,6 @@ window.getAllPages = async function(log=false){
 			keys = await sourceAccount.keys.readFrom('self');*/
     const keys = key.startsWith('bafk') ? await sourceAccount.keys.readFrom('self') : null;
 		const page = await CKE5_Page.fromCID(sourceAccount, key, keys);
-    if(log)
-		  console.log(`${key} is named ${page.name}`);
 		window.lsNames.push({
       address: key, name: page.name,  
       created: page.value?.created_at, 
@@ -256,7 +256,8 @@ window.getAllPages = async function(log=false){
       updated: page.value?.updated_at
     });
 	}
-  console.table(window.lsNames.reduce((acc, {address, ...x}) => { acc[address] = x; return acc}, {}))
+  if(log)
+    console.table(window.lsNames.reduce((acc, {address, ...x}) => { acc[address] = x; return acc}, {}))
 }
 
 window.getAllPages()
