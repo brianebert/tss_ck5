@@ -49,7 +49,7 @@ function BlockParameters(queryParameters){
             CKE5_Page.source.url = false;          
           }
           else if(e.target.value === 'ipfs')
-            CKE5_Page.source.url = (cid) => `https://motia.com/ipfs/${cid.toString()}/`;
+            CKE5_Page.source.url = cid => `https://motia.com/ipfs/${cid.toString()}/`;
           else
             console.error(`oops, didn't expect to be here`);
           console.log(`have set source url to ${CKE5_Page.source.url}`);
@@ -79,8 +79,8 @@ function BlockParameters(queryParameters){
       init: function(queryParameters, blockParameters){
         this.el.addEventListener('change', function(e){
           if(e.target.value === 'ipfs')
-            CKE5_Page.sink.url = (cid) => typeof cid === 'string' ? `https://motia.com/api/v1/ipfs/pin/add?arg=${cid}` :
-                       `          https://motia.com/api/v1/ipfs/block/put?cid-codec=${CKE5_Page.codecForCID(cid).name}`;
+            CKE5_Page.sink.url = cid => typeof cid === 'string' ? `https://motia.com/api/v1/ipfs/pin/add?arg=${cid}` :
+                                 `https://motia.com/api/v1/ipfs/block/put?cid-codec=${CKE5_Page.codecForCID(cid).name}`;
            else
             CKE5_Page.sink.url = false;
           console.log(`have set sink url to: `, CKE5_Page.sink.url);
