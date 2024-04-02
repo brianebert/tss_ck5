@@ -5,11 +5,11 @@
 		<meta charset="UTF-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1">
 		<link rel="icon" type="image/png" href="https://c.cksource.com/a/1/logos/ckeditor5.png">
-		<link rel="stylesheet" type="text/css" href="styles.css">
+		<link rel="stylesheet" type="text/css" href="./styles.css">
 		<style type="text/css">
 			.ioBar button {
 				border-style: solid;
-  			border-width: 1px;
+  				border-width: 1px;
 				font-size:inherit;
 				font-weight: bold;
 			}
@@ -146,8 +146,8 @@
 				<div>
 					<span id="navigationElements">
 						<span>
-						<label for="pageSelect">Select Page:</label>
-						<select id="pageSelect" style="font-weight: bold;" disabled></select>
+							<label for="pageSelect">Select Page:</label>
+							<select id="pageSelect" style="font-weight: bold;" disabled></select>
 						</span>
 						<span>
 							<button id="homeButton" type="button" disabled>Home</button>
@@ -155,8 +155,11 @@
 						</span>
 						<span>
 							<span id="subpagesLabel">Subpages:</span>
-							<span id="subPages"/>
+							<span id="subPages"/></span>
 						</span>
+					</span>
+					<span> <!-- prevents collapsing div when hiding navigationElements -->
+						&nbsp;
 					</span>
 					<span id="pageLinkingElements" style="float: right;">
 						<span>

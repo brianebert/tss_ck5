@@ -154,8 +154,12 @@ console.log(`removeListeners has returned homeButton: `, homeButton);
     bB.editSelect.el.children[0].selected = true;
     Array.from(document.getElementsByClassName('documentEdits')).map(el => el.hidden = true);
     bool ? editor.enableReadOnlyMode(this.lockId) : editor.disableReadOnlyMode(this.lockId);
-    document.getElementById('subPages').hidden = bB.editButton.el.hidden = !bool;
+    document.getElementById('navigationElements').hidden = bB.editButton.el.hidden = !bool;
     bB.editSelect.el.hidden = bB.saveButton.el.disabled = bool;
+
+    //document.getElementById('subPages').hidden = bB.editButton.el.hidden = !bool;
+    
+    //document.getElementById('homeUpButtons').hidden = !bool;
   }
 
   static async refreshHashNameElements(address, accountId){

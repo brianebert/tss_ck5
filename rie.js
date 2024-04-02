@@ -223,13 +223,10 @@ function BlockParameters(queryParameters){
     this[key].init(queryParameters, this);
 }
 
-//CKE5_Page.topBar = new BlockParameters(queryParameters);
-//CKE5_Page.blockParameters = CKE5_Page.topBar;
 CKE5_Page.blockParameters = new BlockParameters(queryParameters);
-console.log(`calling CKE5_Page.openPage with CKE5_Page.blockParameters set to `, CKE5_Page.blockParameters);
-console.log(`typeof CKE5_Page.blockParameters is ${typeof CKE5_Page.blockParameters}`);
-console.log(`typeof Encrypted_Node.blockParameters is ${typeof Encrypted_Node.blockParameters}`);
 CKE5_Page.openPage(sourceAccount);
+
+// The next two functions are used debugging
 
 window.checkForTestPages = async function(pages){
   await window.getAllPages();
