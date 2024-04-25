@@ -6,9 +6,6 @@
   "author": "Brian Ebert",
   "license": "ISC",
   "type": "module",
-  "dependencies": {
-    "@brianebert/tss": "1.0.1"
-  },
   "devDependencies": {
     "webpack-cli": "5.1.4"
   }

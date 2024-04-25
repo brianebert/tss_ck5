@@ -1,7 +1,16 @@
 // Rich Ipfs Editor
-
+import {AuthHeader} from './auth.js';
 import {CKE5_Page} from './cke5.js';
 
+// you can substitute tryipfs.io with an IPFS gateway you have api authorization for
+const SINK_URL_FN = cid =>  // where cid is passed as a string, return url for pin/ls,
+  typeof cid === 'string' ? // where cid is a CID, return url for /block/put
+  `https://tryipfs.io/api/v0/pin/ls?arg=${cid}` :
+  `https://tryipfs.io/api/v0/block/put?cid-codec=${CKE5_Page.codecForCID(cid).name}`;
+const SRC_URL_FN = cid => `https://${cid.toString()}.ipfs.tryipfs.io`; // request will return raw bits
+if(Object.hasOwn(AuthHeader, 'Authorization'))
+  CKE5_Page.sink.updateOptionsWith = {headers: {Authorization: AuthHeader.Authorization}};
+console.log(`sink options are `, CKE5_Page.sink.options);
 
 // just in case you find a good way to pass this in
 const sourceAccountSecret = null;
@@ -49,11 +58,12 @@ function BlockParameters(queryParameters){
             CKE5_Page.source.url = false;          
           }
           else if(e.target.value === 'ipfs')
-            CKE5_Page.source.url = cid => `https://motia.com/ipfs/${cid.toString()}/`;
+            CKE5_Page.source.url = SRC_URL_FN;
           else
             console.error(`oops, didn't expect to be here`);
           console.log(`have set source url to ${CKE5_Page.source.url}`);
           blockParameters.sink.el.value = e.target.value;
+          blockParameters.sink.el.dispatchEvent(new Event('change'));
           blockParameters.copyIt.el.disabled = blockParameters.inKeys.value === blockParameters.outKeys.value;
         })
       }
@@ -79,8 +89,7 @@ function BlockParameters(queryParameters){
       init: function(queryParameters, blockParameters){
         this.el.addEventListener('change', function(e){
           if(e.target.value === 'ipfs')
-            CKE5_Page.sink.url = cid => typeof cid === 'string' ? `https://motia.com/api/v1/ipfs/pin/add?arg=${cid}` :
-                                 `https://motia.com/api/v1/ipfs/block/put?cid-codec=${CKE5_Page.codecForCID(cid).name}`;
+            CKE5_Page.sink.url = SINK_URL_FN;
            else
             CKE5_Page.sink.url = false;
           console.log(`have set sink url to: `, CKE5_Page.sink.url);
@@ -256,5 +265,3 @@ window.getAllPages = async function(log=false){
   if(log)
     console.table(window.lsNames.reduce((acc, {address, ...x}) => { acc[address] = x; return acc}, {}))
 }
-
-window.getAllPages()

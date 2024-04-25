@@ -2,13 +2,10 @@ import {Encrypted_Node} from '@brianebert/tss';
 import {PageControls} from './pagecon.js';
 import {CK_Editor} from './editor.js';
 
-//const HASH_SLICE = 10;
-
 
 class CKE5_Page extends Encrypted_Node {
   #bottomBar; #editorEl;
   constructor(){
-//console.log(`constructing CKE5_Page with blockParameters = `, CKE5_Page.blockParameters);
     if(CKE5_Page.blockParameters.constructor.name !== "BlockParameters")
       throw new Error(`Must set CKE5_Page.blockParameters to BlockParameters`)
     super(...arguments);
@@ -27,7 +24,6 @@ class CKE5_Page extends Encrypted_Node {
         const parentEl = document.getElementById('subPages');
         parentEl.innerHTML = '';
         for(const [key, value] of Object.entries(this.links)){
-  console.log(`processing link ${key}`);
           if(!key.endsWith('_last')){ // no link to last revision
             const button = document.createElement('button');
             button.addEventListener('click', this.onclick);
@@ -62,7 +58,6 @@ class CKE5_Page extends Encrypted_Node {
   static blockParameters;
 
   static async mapPages(root, keys, selectValue){
-console.log(`populating page selector for ${root.name} with ${selectValue} selected.`);
     const subPageLinks = Array.from(document.getElementById('subPages').children);
     subPageLinks.map(link => link.disabled = true);
     const el = root.bottomBar.pageSelect.el;
@@ -70,7 +65,6 @@ console.log(`populating page selector for ${root.name} with ${selectValue} selec
     el.innerHTML = '';
     const opts = [];
     function populateSelectOption(page, depth){
-console.log(`creating page select option ${page.name}, value ${page.cid.toString()}`);
       const pageOption = document.createElement('option');
       let indent;
       for(indent=''; depth; depth--)
@@ -92,7 +86,6 @@ console.log(`creating page select option ${page.name}, value ${page.cid.toString
   }
 
   static async openPage(signingAccount, address=null, name=''){
-  console.log(`entered openPage() with name ${name}, address ${address} signingAccount `, signingAccount);
     // save old page if necessary
     if(window?.editor){  
       const editor = window.editor;
@@ -117,11 +110,9 @@ console.log(`creating page select option ${page.name}, value ${page.cid.toString
     }
     if(window?.collab && window.collab?.bottomBar){
       var homeButton = window.collab.bottomBar.removeListeners(); // strip event listeners from page control elements
-console.log(`removeListeners has returned homeButton: `, homeButton);
     }
     try {
       if(address){
-  console.log(`reading page from address ${address} with keys `, keys);
         window.collab = await this.fromCID(signingAccount, address, keys);
       }
       else { // open welcome page
@@ -132,7 +123,6 @@ console.log(`removeListeners has returned homeButton: `, homeButton);
         const prompt2 = `<p>This page will not be saved unless you edit it!</p>`;
         window.collab = new this({colName: name, editorContents: prompt0 + prompt1 + prompt2}, signingAccount);
         await window.collab.ready;
-  console.log(`created page ${window.collab.name} `, window.collab);
       }
       await this.refreshPageview(window.collab, homeButton);
       // the next two lines for debugging
@@ -156,10 +146,6 @@ console.log(`removeListeners has returned homeButton: `, homeButton);
     bool ? editor.enableReadOnlyMode(this.lockId) : editor.disableReadOnlyMode(this.lockId);
     document.getElementById('navigationElements').hidden = bB.editButton.el.hidden = !bool;
     bB.editSelect.el.hidden = bB.saveButton.el.disabled = bool;
-
-    //document.getElementById('subPages').hidden = bB.editButton.el.hidden = !bool;
-    
-    //document.getElementById('homeUpButtons').hidden = !bool;
   }
 
   static async refreshHashNameElements(address, accountId){
@@ -177,7 +163,6 @@ console.log(`removeListeners has returned homeButton: `, homeButton);
       document.title = title.join(':');
     }
     console.log(`refreshing page for `, node);
-console.log(`with homeButton: `, homeButton);
     node.#bottomBar = new PageControls(node);
     if(Object.hasOwn(window, 'editor'))
       window.editor.destroy();
@@ -189,7 +174,6 @@ console.log(`with homeButton: `, homeButton);
     if(!this.blockParameters.traverse.value){
       document.title = node.name;
       this.blockParameters.copyIt.el.value = node.cid.toString();
-console.log(`have set value ${this.blockParameters.copyIt.el.value} on `, this.blockParameters.copyIt.el);
       await this.mapPages(node);
     }
     else // this.blockParameters.traverse.value = true
@@ -198,12 +182,9 @@ console.log(`have set value ${this.blockParameters.copyIt.el.value} on `, this.b
         node.#bottomBar.editingRoot.reset(node);
         node.#bottomBar.homeButton.reset(node);
         this.blockParameters.copyIt.el.value = node.cid.toString();
-console.log(`have set value ${this.blockParameters.copyIt.el.value} on `, this.blockParameters.copyIt.el);
         await this.mapPages(node, await node.signingAccount.keys.readFrom(this.blockParameters.inKeys.value), node.cid.toString());
       }
       else {
-console.log(`setting homeButton: `, homeButton);
-console.log(`on bottomBar: `, bottomBar);
         node.#bottomBar.homeButton = homeButton;
       }
     window.scroll(0,0);    
@@ -224,9 +205,7 @@ console.log(`on bottomBar: `, bottomBar);
     value = this.pageLinks.update(value);
     value.editorContents = editor.getData();
     const keys = await this.signingAccount.keys.writeTo(CKE5_Page.blockParameters.inKeys.value);
-console.log(`encrypting for ${CKE5_Page.blockParameters.inKeys.value} with keys `, keys);
     return this.update(value, keys).then(async root => {
-console.log(`${this.name} bubbled up to ${root.name}`, root);
       this.#bottomBar.editingPage.reset(this);
       this.#bottomBar.editingRoot.reset(root);
       this.#bottomBar.homeButton.reset(root);
@@ -248,6 +227,5 @@ console.log(`${this.name} bubbled up to ${root.name}`, root);
     })
   }
 }
-//setPageClass(CKE5_Page);
-window.CKE5_Page = CKE5_Page; // delete this after debug
+
 export {CKE5_Page};

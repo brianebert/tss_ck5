@@ -53,7 +53,6 @@ function PageControls(node){
   this.homeButton = {
     resetFn: e => PageClass.openPage(node.signingAccount, e.target.value),
     reset: function(node){
-console.log(`have homeButton reset, running with this: `, this);
       if(PageClass.blockParameters.traverse.value){
         if(Object.hasOwn(this, 'abortControler'))
           this.abortControler.abort();
@@ -65,8 +64,6 @@ console.log(`have homeButton reset, running with this: `, this);
           {signal: this.abortControler.signal}
         )
       }
-      //this.el.disabled = !PageClass.blockParameters.traverse.value;
-console.warn(`have reset homeButton: `, this.el);
     }
   };
   this.upButton = {
@@ -131,7 +128,6 @@ console.warn(`have reset homeButton: `, this.el);
   this.linkAddress = {
     reset: function(node){
       this.el.value = '';
-      //this.el.replaceWith(this.el.cloneNode(true));
       this.el.addEventListener('change', e => {
         if(e.target.value.length > 0 && outerContext.linkName.value.length > 0){
           tryToLink(node, outerContext.linkName.value, e.target.value);
@@ -143,9 +139,6 @@ console.warn(`have reset homeButton: `, this.el);
   this.unlinkName = {
     reset: function(node){
       this.el.value = '';
-      //for(const [key, value] of Object.entries(node.pageLinks.links))
-        //addOption('unlinkNames', key, false, false);
-      //this.el.replaceWith(this.el.cloneNode(true));
       this.el.addEventListener('change', e => {
         if(e.target.value.length > 0 ){
           node.pageLinks.rm(e.target.value);
@@ -157,17 +150,14 @@ console.warn(`have reset homeButton: `, this.el);
   this.rmAddress = {
     reset: function(node){
       this.el.value = '';
-      //this.el.replaceWith(this.el.cloneNode(true));
       this.el.addEventListener('change', e => {
         PageClass.blockParameters.traverse.value = false;
-        //PageClass.blockParameters.traverse.el.dispatchEvent(new Event('change'));
         if(e.target.value.length){
           const addressInputOption = Array.from(document.getElementById('addresses').children)
                                           .filter(child => child.value === e.target.value);
           if(addressInputOption.length)
             addressInputOption.pop().remove();
           PageClass.rm(e.target.value);
-        //node.bottomBar.rmAddress.value = '';
           PageClass.openPage(node.signingAccount, '');
           PageClass.blockParameters.addressInput.value = '';
         }
@@ -182,7 +172,6 @@ console.warn(`have reset homeButton: `, this.el);
   this.newName = {
     reset: function(node){
       this.el.value = '';
-      //this.el.replaceWith(this.el.cloneNode(true));
       this.el.addEventListener('change', e => {
         if(e.target.value.length){
           PageClass.startAutosave(node);
@@ -199,7 +188,6 @@ console.log(`trying to link ${name} to ${address} on page ${page.name}`)
       page.pageLinks.render();
       outerContext.editSelect.reset();
       PageClass.startAutosave(page);
-//page.bottomBar.editSelect.el; Why is this here?
     } catch (err) {
       console.error(`caught error linking pages ${page.cid.toString()} and ${address} with name ${name}`, err);
     }
@@ -240,7 +228,6 @@ console.log(`removeListeners will return homeButton: `, this.homeButton);
   const textInputArray = Array.from(document.getElementById('pageEditInputs').getElementsByTagName('input'));
   for(const key of Object.keys(this)){
     this[key].el = document.getElementById(key);
-    //this[key].el = cloneUniquely(document.getElementById(key)); // cloneUniquely removes el.id from DOM 
     textInputArray.map(input => input.addEventListener('keyup', e => {
       if(input.id.endsWith('Name'))
         if(3 + input.value.length > input.size)
