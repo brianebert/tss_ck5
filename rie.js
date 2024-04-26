@@ -2,6 +2,8 @@
 import {AuthHeader} from './auth.js';
 import {CKE5_Page} from './cke5.js';
 
+const TSS_DOC = 'bafyreifjvirmcmhq6bfib42s7b6tc64l3wpclqk2xvxbrxoo4ncq55g3va';
+
 // you can substitute tryipfs.io with an IPFS gateway you have api authorization for
 const SINK_URL_FN = cid =>  // where cid is passed as a string, return url for pin/ls,
   typeof cid === 'string' ? // where cid is a CID, return url for /block/put
@@ -232,8 +234,15 @@ function BlockParameters(queryParameters){
     this[key].init(queryParameters, this);
 }
 
+// this section loads the tss document upon open
 CKE5_Page.blockParameters = new BlockParameters(queryParameters);
-CKE5_Page.openPage(sourceAccount);
+CKE5_Page.blockParameters.source.el.value = 'ipfs';
+CKE5_Page.blockParameters.inKeys.el.value = 'plaintext';
+CKE5_Page.blockParameters.traverse.el.value = '1';
+CKE5_Page.blockParameters.source.el.dispatchEvent(new Event('change'));
+CKE5_Page.blockParameters.inKeys.el.dispatchEvent(new Event('change'));
+CKE5_Page.blockParameters.traverse.el.dispatchEvent(new Event('change'));
+CKE5_Page.openPage(sourceAccount, TSS_DOC);
 
 // The next two functions are used debugging
 
