@@ -65,6 +65,7 @@ class CKE5_Page extends Encrypted_Node {
     el.innerHTML = '';
     const opts = [];
     function populateSelectOption(page, depth){
+      console.log(`Creating ${page.name} page select option ${page.cid.toString()} `);
       const pageOption = document.createElement('option');
       let indent;
       for(indent=''; depth; depth--)
