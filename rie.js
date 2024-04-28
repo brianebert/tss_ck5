@@ -2,7 +2,7 @@
 import {AuthHeader} from './auth.js';
 import {CKE5_Page} from './cke5.js';
 
-const TSS_DOC = 'bafyreifjvirmcmhq6bfib42s7b6tc64l3wpclqk2xvxbrxoo4ncq55g3va';
+const TSS_DOC = 'bafyreia4uze6btvgh35wbvya7j3ynuftpowm3o6fvsna6zpip7q7wfffg4';
 
 // you can substitute tryipfs.io with an IPFS gateway you have api authorization for
 const SINK_URL_FN = cid =>  // where cid is passed as a string, return url for pin/ls,
