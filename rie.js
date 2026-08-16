@@ -3,6 +3,7 @@ import {AuthHeader} from './auth.js';
 import {CKE5_Page} from './cke5.js';
 
 const TSS_DOC = 'bafyreia4uze6btvgh35wbvya7j3ynuftpowm3o6fvsna6zpip7q7wfffg4';
+const TSS_SRC_ACCOUNT = 'GD5U3GDC7B4FSLKOSLZ5QAOTPYBSTZIQOPN7DK6X4QUKHCCILBHNDZ5J';
 
 // you can substitute tryipfs.io with an IPFS gateway you have api authorization for
 const SINK_URL_FN = cid =>  // where cid is passed as a string, return url for pin/ls,
@@ -239,13 +240,18 @@ CKE5_Page.blockParameters = new BlockParameters(queryParameters);
 CKE5_Page.blockParameters.source.el.value = 'ipfs';
 CKE5_Page.blockParameters.inKeys.el.value = 'plaintext';
 CKE5_Page.blockParameters.traverse.el.value = '1';
+
 CKE5_Page.blockParameters.source.el.dispatchEvent(new Event('change'));
 CKE5_Page.blockParameters.inKeys.el.dispatchEvent(new Event('change'));
 CKE5_Page.blockParameters.traverse.el.dispatchEvent(new Event('change'));
-CKE5_Page.openPage(sourceAccount, TSS_DOC);
+
+CKE5_Page.SigningAccount.dataEntry(TSS_SRC_ACCOUNT, 'tss doc').then(address => {
+  console.log(`opening 'tss doc' from ${address}`);
+  CKE5_Page.blockParameters.addressInput.el.value = address;
+  CKE5_Page.blockParameters.readIt.el.dispatchEvent(new Event('click'));
+})
 
 // The next two functions are used debugging
-
 window.checkForTestPages = async function(pages){
   await window.getAllPages();
   const found = []

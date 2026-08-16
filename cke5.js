@@ -49,6 +49,7 @@ class CKE5_Page extends Encrypted_Node {
           return values
       }
     };
+    this.images = new Set();
   }
 
   get bottomBar(){
