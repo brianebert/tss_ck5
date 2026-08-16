@@ -6,7 +6,11 @@
   "author": "Brian Ebert",
   "license": "ISC",
   "type": "module",
+  "scripts": {
+    "build": "webpack --config webpack.config.cjs"
+  },
   "devDependencies": {
+    "webpack": "5.89.0",
     "webpack-cli": "5.1.4"
   }
 }
