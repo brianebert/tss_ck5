@@ -9,8 +9,17 @@
   "scripts": {
     "build": "webpack --config webpack.config.cjs"
   },
+  "dependencies": {
+    "@brianebert/tss": "file:/Users/brianebert/tss",
+    "multiformats": "^13.3.1"
+  },
   "devDependencies": {
     "webpack": "5.89.0",
-    "webpack-cli": "5.1.4"
+    "webpack-cli": "5.1.4",
+    "buffer": "^6.0.3",
+    "path-browserify": "^1.0.1",
+    "crypto-browserify": "^3.12.1",
+    "events": "^3.3.0",
+    "vm-browserify": "^1.1.2"
   }
 }

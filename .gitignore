@@ -1,3 +1,9 @@
 /node_modules/
 /auth.js
 .DS_Store
+
+# Webpack build output (npm run build regenerates these from source)
+/client.js
+/_*.js
+/*_node_modules_*.js
+/vendors-*.js

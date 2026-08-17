@@ -15,8 +15,9 @@ module.exports = {
       "events": require.resolve("events/"),
       "path": require.resolve("path-browserify"),
       "crypto": require.resolve('crypto-browserify'),
-      "crypto-browserify": require.resolve('crypto-browserify')
-    } 
+      "crypto-browserify": require.resolve('crypto-browserify'),
+      "vm": require.resolve('vm-browserify')
+    }
   },
   mode: 'development',
   entry: {
